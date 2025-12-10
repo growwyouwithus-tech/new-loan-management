@@ -1,0 +1,75 @@
+================================================================================
+  LOAN MANAGEMENT SYSTEM - INSTALLATION INSTRUCTIONS
+================================================================================
+
+STEP 1: OPEN TERMINAL/COMMAND PROMPT
+-------------------------------------
+Open your terminal or command prompt (PowerShell on Windows)
+
+
+STEP 2: NAVIGATE TO PROJECT FOLDER
+-----------------------------------
+cd "d:/loan management/frontend"
+
+
+STEP 3: INSTALL DEPENDENCIES
+-----------------------------
+npm install
+
+(This will take 2-3 minutes to download all packages)
+
+
+STEP 4: START THE APPLICATION
+------------------------------
+npm run dev
+
+
+STEP 5: OPEN IN BROWSER
+------------------------
+Open your web browser and go to:
+http://localhost:3000
+
+
+STEP 6: LOGIN
+-------------
+Admin Panel:
+  Email: admin@lms.com
+  Password: admin123
+
+Shopkeeper Panel:
+  Email: shopkeeper@lms.com
+  Password: shop123
+
+
+================================================================================
+THAT'S IT! YOU'RE READY TO GO!
+================================================================================
+
+WHAT TO EXPLORE:
+- Admin Dashboard: View KPIs, charts, and statistics
+- User Management: Create and manage users
+- Loan Origination: Process loan applications
+- Shopkeeper Dashboard: View business metrics
+- Apply Loan: Create loan applications with EMI calculator
+- Collect Payment: Record payments (works offline!)
+
+FEATURES:
+✓ JWT Authentication
+✓ Role-Based Access Control
+✓ Offline Payment Collection
+✓ Dark/Light Theme Toggle
+✓ Responsive Mobile Design
+✓ Interactive Charts & Tables
+✓ Form Validation
+✓ Real-time Notifications
+
+DOCUMENTATION:
+- QUICKSTART.md - Quick start guide
+- SETUP.md - Detailed setup instructions
+- FEATURES.md - Complete feature list
+- PROJECT_SUMMARY.md - Project overview
+
+NEED HELP?
+Check the documentation files or console for error messages.
+
+================================================================================

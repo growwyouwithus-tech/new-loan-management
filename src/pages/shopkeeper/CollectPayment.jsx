@@ -1,0 +1,319 @@
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { toast } from 'react-toastify'
+import { motion } from 'framer-motion'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
+import Button from '../../components/ui/Button'
+import Input from '../../components/ui/Input'
+import Select from '../../components/ui/Select'
+import { DollarSign, CreditCard, Smartphone, Wallet } from 'lucide-react'
+import { db } from '../../lib/db'
+import loanStore from '../../store/loanStore'
+
+export default function CollectPayment() {
+  const [selectedLoan, setSelectedLoan] = useState(null)
+  const [searchName, setSearchName] = useState('')
+  const [searchAadhar, setSearchAadhar] = useState('')
+  const location = useLocation()
+  const preselectedLoanId = location.state?.loanId
+  const { register, handleSubmit, reset, setValue } = useForm()
+  const { activeLoans, approvedLoans, loans: allLoans, recordPayment, collectPayment, initializeActiveLoans } = loanStore()
+
+  // Initialize active loans from approved loans when component mounts
+  useEffect(() => {
+    if (approvedLoans.length > 0) {
+      initializeActiveLoans()
+    }
+  }, [approvedLoans, initializeActiveLoans])
+
+  // Get loans that are due for payment (active loans + approved loans that haven't been moved to active yet)
+  const availableLoans = [
+    ...activeLoans.filter(loan => 
+      (loan.status === 'Active' || loan.status === 'Overdue')
+    ),
+    ...approvedLoans.filter(loan => 
+      loan.status === 'Approved'
+    ),
+    // Fallback: get all loans from main loans array that are not yet paid or rejected
+    ...allLoans.filter(loan => 
+      (loan.status === 'Active' || loan.status === 'Overdue' || loan.status === 'Approved' || loan.status === 'Verified' || loan.status === 'Pending') &&
+      !activeLoans.find(al => al.id === loan.id) &&
+      !approvedLoans.find(al => al.id === loan.id)
+    )
+  ]
+
+  // Remove duplicates based on loan ID
+  const loans = availableLoans.filter((loan, index, self) => 
+    index === self.findIndex(l => l.id === loan.id)
+  )
+
+  // Apply filters by client name and Aadhar number
+  const filteredLoans = loans.filter((loan) => {
+    const matchesName = searchName
+      ? loan.clientName?.toLowerCase().includes(searchName.toLowerCase())
+      : true
+
+    const matchesAadhar = searchAadhar
+      ? (loan.clientAadharNumber || '').includes(searchAadhar)
+      : true
+
+    return matchesName && matchesAadhar
+  })
+
+  // If navigated with a specific loanId in route state, preselect that loan
+  useEffect(() => {
+    if (!preselectedLoanId) return
+    const loan = loans.find(l => l.id === preselectedLoanId)
+    if (loan) {
+      setValue('loanId', String(loan.id))
+      setSelectedLoan(loan)
+    }
+  }, [preselectedLoanId, loans, setValue])
+
+  // Debug logging
+  console.log('Active Loans:', activeLoans)
+  console.log('Approved Loans:', approvedLoans)
+  console.log('Available Loans:', availableLoans)
+  console.log('Final Loans for dropdown:', loans)
+
+  const onSubmit = async (data) => {
+    try {
+      console.log('Form data:', data);
+      console.log('Available loans:', loans);
+      
+      // Convert loanId to number for comparison
+      const loanId = parseInt(data.loanId);
+      const selectedLoan = loans.find(l => l.id === loanId)
+      
+      console.log('Looking for loan ID:', loanId);
+      console.log('Found loan:', selectedLoan);
+      
+      if (!selectedLoan) {
+        toast.error('Selected loan not found')
+        return
+      }
+
+      // Calculate EMI number based on existing payments
+      const existingPayments = selectedLoan.payments || []
+      const emiNumber = existingPayments.length + 1
+
+      // Create payment record for EMI Management
+      const paymentRecord = {
+        id: `PAY${Date.now()}`,
+        loanId: loanId,
+        amount: parseFloat(data.amount),
+        method: data.method,
+        transactionId: data.transactionId || '',
+        date: new Date().toISOString().split('T')[0],
+        timestamp: new Date().toISOString(),
+        status: 'completed',
+        collectedBy: 'shopkeeper',
+        emiNumber: emiNumber,
+        synced: false
+      }
+      
+      // Save to IndexedDB for offline support
+      await db.payments.add(paymentRecord)
+      
+      // Update loan store with payment using collectPayment function
+      const success = collectPayment(loanId, {
+        amount: parseFloat(data.amount),
+        paymentMode: data.method,
+        paymentDate: paymentRecord.date,
+        collectedBy: 'shopkeeper',
+        transactionId: data.transactionId || '',
+        emiNumber: emiNumber
+      })
+
+      if (success) {
+        // Also record in payments array for EMI Management
+        recordPayment(paymentRecord)
+        
+        toast.success(`EMI #${emiNumber} payment recorded successfully!`)
+        reset()
+        setSelectedLoan(null)
+      } else {
+        toast.error('Failed to record payment')
+      }
+    } catch (error) {
+      toast.error('Failed to record payment')
+    }
+  }
+
+  return (
+    <div className="space-y-4 md:space-y-6">
+      {/* Header - Mobile Optimized */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          Collect Payment
+        </h1>
+        <p className="text-sm md:text-base text-muted-foreground mt-1">Record customer payments</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        {/* Payment Form */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-lg md:text-xl">Record Payment</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
+                {/* Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                  <div>
+                    <label className="text-xs md:text-sm font-semibold">Search by Name</label>
+                    <Input
+                      value={searchName}
+                      onChange={(e) => {
+                        setSearchName(e.target.value)
+                        setSelectedLoan(null)
+                      }}
+                      placeholder="Enter client name"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs md:text-sm font-semibold">Search by Aadhar Number</label>
+                    <Input
+                      value={searchAadhar}
+                      onChange={(e) => {
+                        setSearchAadhar(e.target.value)
+                        setSelectedLoan(null)
+                        
+                        // Auto-select first matching loan when Aadhar is entered
+                        if (e.target.value.trim()) {
+                          const matchingLoan = loans.find(loan => 
+                            (loan.clientAadharNumber || '').includes(e.target.value)
+                          )
+                          if (matchingLoan) {
+                            setTimeout(() => {
+                              setSelectedLoan(matchingLoan)
+                              const emiAmount = matchingLoan.emiAmount || matchingLoan.loanAmount || 0
+                              setValue('amount', emiAmount)
+                            }, 300)
+                          }
+                        }
+                      }}
+                      placeholder="Enter Aadhar number"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs md:text-sm font-semibold">Select Loan</label>
+                  {loans.length === 0 && (
+                    <div className="p-3 bg-yellow-100 border border-yellow-300 rounded-md mb-2">
+                      <p className="text-sm text-yellow-800">
+                        No active loans available for payment collection.
+                        <br />
+                        Debug info: Active: {activeLoans.length}, Approved: {approvedLoans.length}, All: {allLoans.length}
+                      </p>
+                    </div>
+                  )}
+                <Select
+                  {...register('loanId')}
+                  onChange={(e) => {
+                    const loanId = parseInt(e.target.value)
+                    const loan = loans.find((l) => l.id === loanId)
+                    setSelectedLoan(loan)
+                    
+                    // Auto-fill form fields when loan is selected
+                    if (loan) {
+                      const emiAmount = loan.emiAmount || loan.loanAmount || 0
+                      setValue('amount', emiAmount)
+                    }
+                  }}
+                >
+                  <option value="">Select loan</option>
+                  {filteredLoans.map((loan) => (
+                    <option key={loan.id} value={loan.id}>
+                      {loan.loanId || loan.id} - {loan.clientName} - ₹{loan.emiAmount || 'N/A'}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+                {selectedLoan && (
+                  <div className="space-y-3">
+                    {/* Loan Details Card */}
+                    <div className="p-4 md:p-5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold">Client Name</p>
+                          <p className="text-sm md:text-base font-bold text-gray-900 mt-1">{selectedLoan.clientName || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold">Aadhar Number</p>
+                          <p className="text-sm md:text-base font-bold text-gray-900 mt-1">{selectedLoan.clientAadharNumber || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold">Loan ID</p>
+                          <p className="text-sm md:text-base font-bold text-gray-900 mt-1">{selectedLoan.loanId || selectedLoan.id}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold">Loan Status</p>
+                          <p className="text-sm md:text-base font-bold text-gray-900 mt-1">{selectedLoan.status || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold">Total Loan Amount</p>
+                          <p className="text-sm md:text-base font-bold text-gray-900 mt-1">₹{(selectedLoan.loanAmount || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold">Tenure (Months)</p>
+                          <p className="text-sm md:text-base font-bold text-gray-900 mt-1">{selectedLoan.tenure || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold">EMIs Paid</p>
+                          <p className="text-sm md:text-base font-bold text-green-600 mt-1">{selectedLoan.emisPaid || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 font-semibold">EMIs Remaining</p>
+                          <p className="text-sm md:text-base font-bold text-orange-600 mt-1">{selectedLoan.emisRemaining || 0}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Due Amount Card */}
+                    <div className="p-4 md:p-5 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl shadow-lg">
+                      <p className="text-xs md:text-sm text-white/90 font-medium">Due Amount (This EMI)</p>
+                      <p className="text-3xl md:text-4xl font-bold text-white mt-1">₹{(selectedLoan.emiAmount || selectedLoan.loanAmount || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs md:text-sm font-semibold">Payment Amount</label>
+                <Input {...register('amount')} type="number" placeholder="Enter amount" />
+              </div>
+
+                <div>
+                  <label className="text-xs md:text-sm font-semibold">Payment Method</label>
+                <Select {...register('method')}>
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                  <option value="card">Card</option>
+                  <option value="wallet">Wallet</option>
+                </Select>
+              </div>
+
+                <div>
+                  <label className="text-xs md:text-sm font-semibold">Transaction ID (Optional)</label>
+                <Input {...register('transactionId')} placeholder="Enter transaction ID" />
+              </div>
+
+                <Button type="submit" className="!bg-green-500 !hover:bg-green-600 !text-white w-full h-12 md:h-10 text-sm font-semibold shadow-lg">
+                  Record Payment
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+              </div>
+    </div>
+  )
+}

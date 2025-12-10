@@ -1,0 +1,191 @@
+/* Print Styles for Loan Details */
+
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only loan print section */
+  #loan-print-section,
+  #loan-print-section * {
+    visibility: visible;
+  }
+
+  /* Position loan print section */
+  #loan-print-section {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+
+  /* Hide specific elements */
+  .no-print,
+  button,
+  nav,
+  aside,
+  header:not(#loan-print-section header),
+  .sidebar,
+  .modal-overlay {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Page setup - Allow multiple pages */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  /* Body styling */
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+    overflow: visible !important;
+  }
+
+  /* Remove shadows */
+  * {
+    box-shadow: none !important;
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+
+  /* Ensure content is visible */
+  #loan-print-section * {
+    visibility: visible !important;
+  }
+
+  /* Tables - Allow page breaks */
+  table {
+    page-break-inside: auto;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  table thead {
+    display: table-header-group;
+  }
+
+  table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+  }
+
+  /* Cards and sections - Allow page breaks */
+  .bg-white,
+  .card,
+  .Card {
+    border: 1px solid #ddd !important;
+    page-break-inside: auto;
+    margin-bottom: 15px;
+  }
+
+  /* Space between sections */
+  .space-y-6 > * {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
+
+  .space-y-4 > * {
+    margin-bottom: 15px;
+    page-break-inside: avoid;
+  }
+
+  /* Remove background colors */
+  .bg-blue-50,
+  .bg-gray-50,
+  .bg-green-50,
+  .bg-yellow-50,
+  .bg-red-50 {
+    background: white !important;
+  }
+
+  /* Text colors to black */
+  .text-blue-600,
+  .text-green-600,
+  .text-red-600,
+  .text-gray-600,
+  .text-muted-foreground {
+    color: #000 !important;
+  }
+
+  /* Ensure all content flows properly */
+  #loan-print-section {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Remove any height restrictions */
+  .overflow-hidden,
+  .overflow-y-auto,
+  .overflow-auto {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+
+  /* Force all containers to expand */
+  div, section, article {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+
+  /* Modal specific fixes */
+  [role="dialog"],
+  .modal,
+  .modal-content,
+  .modal-body {
+    position: static !important;
+    transform: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Remove fixed positioning */
+  .fixed,
+  .sticky {
+    position: static !important;
+  }
+
+  /* Target specific modal classes */
+  .max-h-\[90vh\],
+  .max-h-screen {
+    max-height: none !important;
+  }
+
+  .flex-1 {
+    flex: none !important;
+  }
+
+  /* Ensure all parent containers allow content to flow */
+  #loan-print-section,
+  #loan-print-section > *,
+  #loan-print-section > * > *,
+  #loan-print-section > * > * > * {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}

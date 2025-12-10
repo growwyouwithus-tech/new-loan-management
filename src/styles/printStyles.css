@@ -1,0 +1,133 @@
+/* Print Styles for Loan Application */
+
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only print section */
+  #print-section,
+  #print-section * {
+    visibility: visible;
+  }
+
+  /* Position print section */
+  #print-section {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible !important;
+  }
+
+  /* Hide specific elements */
+  .no-print,
+  button,
+  .stepper,
+  nav,
+  aside,
+  header:not(#print-section header),
+  .sidebar {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Page setup - Allow multiple pages */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  /* Body styling */
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+    overflow: visible !important;
+  }
+
+  /* Remove shadows and borders */
+  * {
+    box-shadow: none !important;
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+
+  /* Ensure content is visible */
+  #print-section * {
+    visibility: visible !important;
+  }
+
+  /* Tables - Allow page breaks */
+  table {
+    page-break-inside: auto;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  table thead {
+    display: table-header-group;
+  }
+
+  table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Cards and sections - Allow page breaks */
+  .bg-white,
+  .card {
+    border: 1px solid #ddd !important;
+    page-break-inside: auto;
+    margin-bottom: 15px;
+  }
+
+  /* Space between sections */
+  .space-y-6 > * {
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+  }
+
+  .space-y-4 > * {
+    margin-bottom: 15px;
+    page-break-inside: avoid;
+  }
+
+  /* Remove background colors */
+  .bg-blue-50,
+  .bg-gray-50,
+  .bg-green-50,
+  .bg-yellow-50,
+  .bg-red-50 {
+    background: white !important;
+  }
+
+  /* Text colors to black */
+  .text-blue-600,
+  .text-green-600,
+  .text-red-600,
+  .text-gray-600 {
+    color: #000 !important;
+  }
+
+  /* Ensure all content flows properly */
+  #print-section {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+
+  /* Remove any height restrictions */
+  .overflow-hidden,
+  .overflow-y-auto {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}

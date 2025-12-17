@@ -28,68 +28,37 @@ export default function LoginPage() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'admin@lms.com',
-      password: 'admin123',
+      email: 'testadmin@example.com',
+      password: 'Test@123',
     },
   })
 
   const onSubmit = async (data) => {
     setLoading(true)
     try {
-      // Mock login - replace with actual API call
-      let userRole = 'admin'
-      let userName = 'Admin User'
-      
-      if (data.email.includes('shopkeeper')) {
-        userRole = 'shopkeeper'
-        userName = 'Shopkeeper User'
-      } else if (data.email.includes('verifier')) {
-        userRole = 'verifier'
-        userName = 'Loan Verifier'
-      } else if (data.email.includes('collections')) {
-        userRole = 'collections'
-        userName = 'Collections Officer'
-      }
-      
-      const mockResponse = {
-        success: true,
-        user: {
-          id: 1,
-          name: userName,
-          email: data.email,
-          role: userRole,
-        },
-      }
+      // Call real backend API with email
+      const result = await login(data)
 
-      if (mockResponse.success) {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        
-        // Set auth state
-        useAuthStore.setState({
-          user: mockResponse.user,
-          accessToken: 'mock-access-token',
-          refreshToken: 'mock-refresh-token',
-          isAuthenticated: true,
-        })
-
+      if (result.success) {
         toast.success('Login successful!')
         
         // Navigate based on role
-        if (mockResponse.user.role === 'shopkeeper') {
+        const userRole = result.user.role
+        if (userRole === 'shopkeeper') {
           navigate('/shopkeeper')
-        } else if (mockResponse.user.role === 'verifier') {
+        } else if (userRole === 'verifier') {
           navigate('/verifier')
-        } else if (mockResponse.user.role === 'collections') {
+        } else if (userRole === 'collections') {
           navigate('/collections')
         } else {
           navigate('/admin')
         }
       } else {
-        toast.error('Invalid credentials')
+        toast.error(result.error || 'Invalid credentials')
       }
     } catch (error) {
       toast.error('Login failed. Please try again.')
+      console.error('Login error:', error)
     } finally {
       setLoading(false)
     }
@@ -115,13 +84,13 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-sm font-medium">Email or Shopkeeper ID</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     {...register('email')}
-                    type="email"
-                    placeholder="admin@lms.com"
+                    type="text"
+                    placeholder="admin@lms.com or SK123456"
                     className="pl-10"
                     error={errors.email}
                   />
@@ -159,11 +128,10 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-              <p className="font-semibold">Demo Credentials:</p>
-              <p>Admin: admin@lms.com / admin123</p>
-              <p>Shopkeeper: shopkeeper@lms.com / shop123</p>
-              <p>Loan Verifier: verifier@lms.com / verify123</p>
-              <p>Collections: collections@lms.com / collect123</p>
+              <p className="font-semibold">Test Credentials:</p>
+              <p>Admin: testadmin@example.com / Test@123</p>
+              <p>Shopkeeper: Use your Email / Password</p>
+              <p className="text-xs mt-2">Note: Shopkeepers are created from Admin Panel</p>
             </div>
           </CardContent>
         </Card>

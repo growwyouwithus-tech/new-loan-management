@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { DollarSign, FileText, Users, TrendingUp, Clock, CheckCircle, CalendarCheck, Clock3, CheckCircle2 } from 'lucide-react'
@@ -33,7 +34,11 @@ const recentLoans = [
 
 export default function ShopkeeperDashboard() {
   const navigate = useNavigate()
-  const { loans } = loanStore()
+  const { loans, fetchLoans, loading } = loanStore()
+  
+  useEffect(() => {
+    fetchLoans()
+  }, [])
   
   // Calculate real data from loans
   const totalLoans = loans.length

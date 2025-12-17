@@ -23,7 +23,9 @@ export default function AdminDashboard() {
     verifiedLoans, 
     approvedLoans, 
     activeLoans, 
-    completedLoans 
+    completedLoans,
+    fetchLoans,
+    loading
   } = loanStore()
   
   // Calculate actual stats from loan store
@@ -93,6 +95,11 @@ export default function AdminDashboard() {
     ]
   }
   
+  useEffect(() => {
+    // Fetch loans from backend on component mount
+    fetchLoans()
+  }, [])
+
   useEffect(() => {
     updateNotifications(loans, activeLoans)
   }, [loans, activeLoans, updateNotifications])

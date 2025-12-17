@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import shopkeeperService from '../api/shopkeeperService';
 
 // Shopkeeper store for managing shopkeeper data and KYC status
 const shopkeeperStore = create(
@@ -7,44 +8,64 @@ const shopkeeperStore = create(
     (set, get) => ({
       // All shopkeepers in the system
       shopkeepers: [],
+      loading: false,
+      error: null,
+
+      // Fetch all shopkeepers from backend
+      fetchShopkeepers: async () => {
+        set({ loading: true, error: null });
+        try {
+          const response = await shopkeeperService.getAllShopkeepers();
+          const shopkeepers = response.shopkeepers || response;
+          set({ shopkeepers, loading: false });
+          return shopkeepers;
+        } catch (error) {
+          console.error('Failed to fetch shopkeepers:', error);
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
       
       // Add a new shopkeeper
-      addShopkeeper: (shopkeeperData) => {
-        const newShopkeeper = {
-          id: Date.now(),
-          shopkeeperId: `SK${String(Date.now()).slice(-6)}`,
-          ...shopkeeperData,
-          kycStatus: 'pending', // pending, verified, rejected
-          registrationDate: new Date().toISOString().split('T')[0],
-          createdAt: new Date().toISOString(),
-        };
+      addShopkeeper: async (shopkeeperData) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await shopkeeperService.createShopkeeper(shopkeeperData);
+          // Backend returns { message, shopkeeper }
+          const newShopkeeper = response.shopkeeper || response;
 
-        set((state) => ({
-          shopkeepers: [...state.shopkeepers, newShopkeeper],
-        }));
+          set((state) => ({
+            shopkeepers: [...state.shopkeepers, newShopkeeper],
+            loading: false,
+          }));
 
-        return newShopkeeper;
+          return newShopkeeper;
+        } catch (error) {
+          console.error('Failed to create shopkeeper:', error);
+          set({ loading: false, error: error.message });
+          throw error;
+        }
       },
 
       // Update shopkeeper KYC status
-      updateShopkeeperKYC: (shopkeeperId, kycStatus, verifiedBy = 'admin') => {
-        const shopkeeper = get().shopkeepers.find(s => s.id === shopkeeperId);
-        if (!shopkeeper) return false;
+      updateShopkeeperKYC: async (shopkeeperId, kycStatus, verifiedBy = 'admin') => {
+        try {
+          const updatedShopkeeper = await shopkeeperService.updateShopkeeperKYC(shopkeeperId, {
+            kycStatus,
+            verifiedBy
+          });
 
-        const updatedShopkeeper = {
-          ...shopkeeper,
-          kycStatus,
-          verifiedBy,
-          verifiedDate: kycStatus === 'verified' ? new Date().toISOString().split('T')[0] : null,
-          rejectedDate: kycStatus === 'rejected' ? new Date().toISOString().split('T')[0] : null,
-          updatedAt: new Date().toISOString(),
-        };
+          set((state) => ({
+            shopkeepers: state.shopkeepers.map(s => 
+              (s.id === shopkeeperId || s._id === shopkeeperId) ? updatedShopkeeper : s
+            ),
+          }));
 
-        set((state) => ({
-          shopkeepers: state.shopkeepers.map(s => s.id === shopkeeperId ? updatedShopkeeper : s),
-        }));
-
-        return true;
+          return true;
+        } catch (error) {
+          console.error('Failed to update shopkeeper KYC:', error);
+          throw error;
+        }
       },
 
       // Get shopkeeper by ID
@@ -69,11 +90,17 @@ const shopkeeperStore = create(
       },
 
       // Delete shopkeeper
-      deleteShopkeeper: (shopkeeperId) => {
-        set((state) => ({
-          shopkeepers: state.shopkeepers.filter(s => s.id !== shopkeeperId),
-        }));
-        return true;
+      deleteShopkeeper: async (shopkeeperId) => {
+        try {
+          await shopkeeperService.deleteShopkeeper(shopkeeperId);
+          set((state) => ({
+            shopkeepers: state.shopkeepers.filter(s => s.id !== shopkeeperId && s._id !== shopkeeperId),
+          }));
+          return true;
+        } catch (error) {
+          console.error('Failed to delete shopkeeper:', error);
+          throw error;
+        }
       },
 
       // Clear all shopkeepers (for testing)

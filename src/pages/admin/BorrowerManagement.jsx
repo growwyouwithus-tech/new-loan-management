@@ -5,12 +5,17 @@ import { toast } from 'react-toastify'
 import loanStore from '../../store/loanStore'
 
 export default function BorrowerManagement() {
-  const { loans, updateCustomerKYC } = loanStore()
+  const { loans, updateCustomerKYC, fetchLoans, loading } = loanStore()
   const navigate = useNavigate()
   const [borrowers, setBorrowers] = useState([])
   const [viewingBorrower, setViewingBorrower] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [kycFilter, setKycFilter] = useState('all')
+
+  // Fetch loans from backend on mount
+  useEffect(() => {
+    fetchLoans()
+  }, [])
 
   // Extract unique borrowers from loans
   useEffect(() => {

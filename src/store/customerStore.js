@@ -1,46 +1,81 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import customerService from '../api/customerService'
 
 const customerStore = create(
   persist(
     (set, get) => ({
       customers: [],
+      loading: false,
+      error: null,
+
+      // Fetch all customers from backend
+      fetchCustomers: async () => {
+        set({ loading: true, error: null })
+        try {
+          const response = await customerService.getAllCustomers()
+          const customers = response.customers || response
+          set({ customers, loading: false })
+          return customers
+        } catch (error) {
+          console.error('Failed to fetch customers:', error)
+          set({ error: error.message, loading: false })
+          throw error
+        }
+      },
       
       // Add new customer
-      addCustomer: (customerData) => {
-        const newCustomer = {
-          id: Date.now().toString(),
-          ...customerData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+      addCustomer: async (customerData) => {
+        try {
+          const newCustomer = await customerService.createCustomer(customerData)
+          
+          set((state) => ({
+            customers: [...state.customers, newCustomer]
+          }))
+          
+          return newCustomer
+        } catch (error) {
+          console.error('Failed to create customer:', error)
+          throw error
         }
-        
-        set((state) => ({
-          customers: [...state.customers, newCustomer]
-        }))
-        
-        return newCustomer
       },
       
       // Update customer
-      updateCustomer: (customerId, updatedData) => {
-        set((state) => ({
-          customers: state.customers.map(customer =>
-            customer.id === customerId
-              ? { ...customer, ...updatedData, updatedAt: new Date().toISOString() }
-              : customer
-          )
-        }))
-        
-        return get().customers.find(c => c.id === customerId)
+      updateCustomer: async (customerId, updatedData) => {
+        try {
+          const updatedCustomer = await customerService.updateCustomer(customerId, updatedData)
+          
+          set((state) => ({
+            customers: state.customers.map(customer =>
+              (customer.id === customerId || customer._id === customerId)
+                ? updatedCustomer
+                : customer
+            )
+          }))
+          
+          return updatedCustomer
+        } catch (error) {
+          console.error('Failed to update customer:', error)
+          throw error
+        }
       },
       
       // Delete customer
-      deleteCustomer: (customerId) => {
-        set((state) => ({
-          customers: state.customers.filter(customer => customer.id !== customerId)
-        }))
-        return true
+      deleteCustomer: async (customerId) => {
+        try {
+          await customerService.deleteCustomer(customerId)
+          
+          set((state) => ({
+            customers: state.customers.filter(customer => 
+              customer.id !== customerId && customer._id !== customerId
+            )
+          }))
+          
+          return true
+        } catch (error) {
+          console.error('Failed to delete customer:', error)
+          throw error
+        }
       },
       
       // Get customer by ID

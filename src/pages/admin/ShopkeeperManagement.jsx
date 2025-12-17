@@ -11,9 +11,14 @@ import shopkeeperStore from '../../store/shopkeeperStore'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 
 export default function ShopkeeperManagement() {
-  const { shopkeepers, addShopkeeper, updateShopkeeperKYC, deleteShopkeeper } = shopkeeperStore()
+  const { shopkeepers, addShopkeeper, updateShopkeeperKYC, deleteShopkeeper, fetchShopkeepers, loading } = shopkeeperStore()
   const [localShopkeepers, setLocalShopkeepers] = useState(shopkeepers)
   
+  // Fetch shopkeepers from backend on mount
+  useEffect(() => {
+    fetchShopkeepers()
+  }, [])
+
   // Sync with store
   useEffect(() => {
     setLocalShopkeepers(shopkeepers)
@@ -285,10 +290,15 @@ export default function ShopkeeperManagement() {
     },
   ]
 
-  const handleDelete = (shopkeeper) => {
+  const handleDelete = async (shopkeeper) => {
     if (window.confirm(`Are you sure you want to delete shopkeeper "${shopkeeper.shopName || shopkeeper.name}"? This action cannot be undone.`)) {
-      deleteShopkeeper(shopkeeper.id)
-      toast.success('Shopkeeper deleted successfully')
+      try {
+        await deleteShopkeeper(shopkeeper.id || shopkeeper._id)
+        toast.success('Shopkeeper deleted successfully')
+        fetchShopkeepers()
+      } catch (error) {
+        toast.error('Failed to delete shopkeeper')
+      }
     }
   }
 
@@ -328,20 +338,40 @@ export default function ShopkeeperManagement() {
       // Add new shopkeeper using store method
       const newShopkeeperData = {
         shopName: data.name,
-        fullName: data.owner,
-        mobileNumber: data.phone,
+        ownerName: data.owner,
+        phoneNumber: data.phone,
         email: data.email,
-        gstNumber: data.gstNumber,
-        password: data.password, // Note: In a real app, this should be hashed
+        aadharNumber: data.aadharNumber || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        pincode: data.pincode || '',
+        gstNumber: data.gstNumber || '',
+        panNumber: data.panNumber || '',
+        password: data.password,
+        creditLimit: data.creditLimit || 0,
         ownerPhoto,
         shopImage,
-        creditLimit: Number(data.creditLimit) || 0,
-        availableCredit: Number(data.creditLimit) || 0,
-        status: 'active',
+        kycStatus: 'pending',
       }
       
       addShopkeeper(newShopkeeperData)
-      toast.success('Shopkeeper added successfully')
+        .then((result) => {
+          const email = result.email || result.shopkeeper?.email || newShopkeeperData.email
+          toast.success(`Shopkeeper added successfully! Login Email: ${email}`)
+          // Refresh shopkeepers list
+          fetchShopkeepers()
+          // Reset form and close modal
+          setIsModalOpen(false)
+          setEditingShopkeeper(null)
+          setOwnerPhoto(null)
+          setShopImage(null)
+          reset()
+        })
+        .catch((error) => {
+          toast.error(error.response?.data?.message || 'Failed to create shopkeeper')
+        })
+      return
     }
     
     // Reset form and close modal
@@ -442,6 +472,65 @@ export default function ShopkeeperManagement() {
                 placeholder="Enter owner name" 
               />
               {errors.owner && <p className="text-red-500 text-xs mt-1">{errors.owner.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-medium">Aadhar Number <span className="text-red-500">*</span></label>
+              <Input 
+                {...register('aadharNumber', { 
+                  required: 'Aadhar number is required',
+                  pattern: {
+                    value: /^[0-9]{12}$/,
+                    message: 'Invalid Aadhar number (12 digits required)'
+                  }
+                })} 
+                placeholder="Enter 12-digit Aadhar number" 
+              />
+              {errors.aadharNumber && <p className="text-red-500 text-xs mt-1">{errors.aadharNumber.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-medium">Address <span className="text-red-500">*</span></label>
+              <Input 
+                {...register('address', { required: 'Address is required' })} 
+                placeholder="Enter shop address" 
+              />
+              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-medium">City <span className="text-red-500">*</span></label>
+              <Input 
+                {...register('city', { required: 'City is required' })} 
+                placeholder="Enter city" 
+              />
+              {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-medium">State <span className="text-red-500">*</span></label>
+              <Input 
+                {...register('state', { required: 'State is required' })} 
+                placeholder="Enter state" 
+              />
+              {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-medium">Pincode <span className="text-red-500">*</span></label>
+              <Input 
+                {...register('pincode', { 
+                  required: 'Pincode is required',
+                  pattern: {
+                    value: /^[0-9]{6}$/,
+                    message: 'Invalid pincode (6 digits required)'
+                  }
+                })} 
+                placeholder="Enter 6-digit pincode" 
+              />
+              {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm font-medium">PAN Number (Optional)</label>
+              <Input 
+                {...register('panNumber')} 
+                placeholder="Enter PAN number" 
+              />
             </div>
             <div>
               <label className="text-sm font-medium">GST Number (Optional)</label>

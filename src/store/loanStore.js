@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import notificationStore from './notificationStore';
+import loanService from '../api/loanService';
 
 // Loan status flow: Pending -> Verified -> Approved -> Active/Overdue/Paid
 const loanStore = create(
@@ -24,90 +25,115 @@ const loanStore = create(
       // Completed loans
       completedLoans: [],
 
+      // Loading state
+      loading: false,
+      error: null,
+
+      // Fetch all loans from backend
+      fetchLoans: async () => {
+        set({ loading: true, error: null });
+        try {
+          const response = await loanService.getAllLoans();
+          const loans = response.loans || response;
+          
+          // Categorize loans by status
+          const pendingLoans = loans.filter(l => l.status === 'Pending');
+          const verifiedLoans = loans.filter(l => l.status === 'Verified');
+          const approvedLoans = loans.filter(l => l.status === 'Approved');
+          const activeLoans = loans.filter(l => l.status === 'Active');
+          const completedLoans = loans.filter(l => l.status === 'Paid' || l.status === 'Completed');
+          
+          set({ 
+            loans,
+            pendingLoans,
+            verifiedLoans,
+            approvedLoans,
+            activeLoans,
+            completedLoans,
+            loading: false 
+          });
+          
+          return loans;
+        } catch (error) {
+          console.error('Failed to fetch loans:', error);
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
       // Add a new loan application (from shopkeeper)
-      addLoanApplication: (loanData) => {
-        const newLoan = {
-          id: Date.now(),
-          // Use Aadhar number as the visible Loan ID / Loan Number for simplicity
-          loanId: loanData.clientAadharNumber || `LN${String(Date.now()).slice(-6)}`,
-          ...loanData,
-          status: 'Pending',
-          kycStatus: 'pending', // pending, verified, rejected
-          appliedDate: loanData.emiStartDate || new Date().toISOString().split('T')[0],
-          emiStartDate: loanData.emiStartDate || new Date().toISOString().split('T')[0], // Explicitly store EMI start date
-          submittedBy: 'shopkeeper',
-          createdAt: new Date().toISOString(),
-          // Calculate next due date (30 days from approval)
-          nextDueDate: null,
-          emisPaid: 0,
-          emisRemaining: loanData.tenure || 0,
-          penalties: [],
-          totalPenalty: 0,
-        };
+      addLoanApplication: async (loanData) => {
+        try {
+          // Save to backend first
+          const newLoan = await loanService.createLoan(loanData);
+          
+          // Update local store with backend response
+          set((state) => ({
+            loans: [...state.loans, newLoan],
+            pendingLoans: [...state.pendingLoans, newLoan],
+          }));
 
-        set((state) => ({
-          loans: [...state.loans, newLoan],
-          pendingLoans: [...state.pendingLoans, newLoan],
-        }));
+          // Trigger notification for verifier
+          notificationStore.getState().addNotification({
+            type: 'new_loan_application',
+            title: 'New Loan Application',
+            message: `New loan application from ${loanData.clientName} (${newLoan.loanId || newLoan._id}) - Amount: ₹${loanData.loanAmount?.toLocaleString()}`,
+            severity: 'medium',
+            loanId: newLoan.loanId || newLoan._id,
+            clientName: loanData.clientName,
+            loanAmount: loanData.loanAmount,
+            targetRole: 'verifier'
+          });
 
-        // Trigger notification for verifier
-        notificationStore.getState().addNotification({
-          type: 'new_loan_application',
-          title: 'New Loan Application',
-          message: `New loan application from ${loanData.clientName} (${newLoan.loanId}) - Amount: ₹${loanData.loanAmount?.toLocaleString()}`,
-          severity: 'medium',
-          loanId: newLoan.loanId,
-          clientName: loanData.clientName,
-          loanAmount: loanData.loanAmount,
-          targetRole: 'verifier'
-        });
-
-        return newLoan;
+          return newLoan;
+        } catch (error) {
+          console.error('Failed to create loan:', error);
+          throw error;
+        }
       },
 
       // Update loan status (admin actions)
-      updateLoanStatus: (loanId, newStatus, updatedBy = 'admin', comment = '') => {
-        const loan = get().loans.find(l => l.id === loanId);
-        if (!loan) return false;
-
-        const updatedLoan = {
-          ...loan,
-          status: newStatus,
-          updatedBy,
-          updatedAt: new Date().toISOString(),
-          ...(newStatus === 'Verified' && { verifiedDate: new Date().toISOString().split('T')[0] }),
-          ...(newStatus === 'Approved' && { approvedDate: new Date().toISOString().split('T')[0] }),
-          ...(comment && { statusComment: comment, commentDate: new Date().toISOString() }),
-        };
-
-        set((state) => {
-          const updatedLoans = state.loans.map(l => l.id === loanId ? updatedLoan : l);
+      updateLoanStatus: async (loanId, newStatus, updatedBy = 'admin', comment = '') => {
+        try {
+          // Update in backend first
+          const updatedLoan = await loanService.updateLoanStatus(loanId, newStatus, comment);
           
-          return {
-            loans: updatedLoans,
-            pendingLoans: state.pendingLoans.map(l => l.id === loanId ? updatedLoan : l),
-            verifiedLoans: newStatus === 'Verified' 
-              ? [...state.verifiedLoans.filter(l => l.id !== loanId), updatedLoan]
-              : state.verifiedLoans.map(l => l.id === loanId ? updatedLoan : l),
-            approvedLoans: newStatus === 'Approved'
-              ? [...state.approvedLoans.filter(l => l.id !== loanId), updatedLoan]
-              : state.approvedLoans.map(l => l.id === loanId ? updatedLoan : l),
-          };
-        });
-
-        // Add KYC verification notification if loan is verified
-        if (newStatus === 'Verified') {
-          notificationStore.getState().addNotification({
-            type: 'info',
-            title: 'KYC Verification Required',
-            message: `KYC verification needed for ${loan.customerName} (Loan ID: ${loanId})`,
-            severity: 'medium',
-            loanId: loanId,
-            clientId: loan.customerId,
+          // Update local store
+          set((state) => {
+            const updatedLoans = state.loans.map(l => 
+              (l.id === loanId || l._id === loanId) ? updatedLoan : l
+            );
+            
+            return {
+              loans: updatedLoans,
+              pendingLoans: state.pendingLoans.map(l => 
+                (l.id === loanId || l._id === loanId) ? updatedLoan : l
+              ),
+              verifiedLoans: newStatus === 'Verified' 
+                ? [...state.verifiedLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan]
+                : state.verifiedLoans.map(l => (l.id === loanId || l._id === loanId) ? updatedLoan : l),
+              approvedLoans: newStatus === 'Approved'
+                ? [...state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan]
+                : state.approvedLoans.map(l => (l.id === loanId || l._id === loanId) ? updatedLoan : l),
+            };
           });
-        }
 
-        return true;
+          // Add KYC verification notification if loan is verified
+          if (newStatus === 'Verified') {
+            notificationStore.getState().addNotification({
+              type: 'info',
+              title: 'KYC Verification Required',
+              message: `KYC verification needed for ${updatedLoan.customerName || updatedLoan.clientName}`,
+              severity: 'medium',
+              loanId: loanId,
+            });
+          }
+
+          return true;
+        } catch (error) {
+          console.error('Failed to update loan status:', error);
+          throw error;
+        }
       },
 
       // Move verified loan to approved (final admin approval)
@@ -166,70 +192,54 @@ const loanStore = create(
       },
 
       // Collections officer actions
-      collectPayment: (loanId, paymentData) => {
-        const loan = get().loans.find(l => l.id === loanId);
-        if (!loan) return false;
-
-        const updatedLoan = {
-          ...loan,
-          emisPaid: (loan.emisPaid || 0) + 1,
-          emisRemaining: (loan.emisRemaining || loan.tenure) - 1,
-          lastPaymentDate: paymentData.paymentDate,
-          payments: [
-            ...(loan.payments || []),
-            {
-              id: Date.now(),
-              amount: paymentData.amount,
-              paymentMode: paymentData.paymentMode,
-              paymentDate: paymentData.paymentDate,
-              collectedBy: paymentData.collectedBy || 'collections',
-              paymentProof: paymentData.paymentProof,
-              createdAt: new Date().toISOString(),
-            }
-          ],
-          status: ((loan.emisRemaining || loan.tenure) - 1) === 0 ? 'Paid' : 'Active',
-          updatedAt: new Date().toISOString(),
-        };
-
-        set((state) => {
-          const updatedLoans = state.loans.map(l => l.id === loanId ? updatedLoan : l);
+      collectPayment: async (loanId, paymentData) => {
+        try {
+          // Save payment to backend first
+          const updatedLoan = await loanService.collectPayment(loanId, paymentData);
           
-          return {
-            loans: updatedLoans,
-            // Update activeLoans if loan is in activeLoans
-            activeLoans: state.activeLoans.some(l => l.id === loanId)
-              ? updatedLoan.status === 'Paid' 
-                ? state.activeLoans.filter(l => l.id !== loanId)
-                : state.activeLoans.map(l => l.id === loanId ? updatedLoan : l)
-              : state.activeLoans,
-            // Update approvedLoans if loan is in approvedLoans (move to activeLoans after payment)
-            approvedLoans: state.approvedLoans.some(l => l.id === loanId)
-              ? state.approvedLoans.filter(l => l.id !== loanId)
-              : state.approvedLoans,
-            // Add to activeLoans if it was in approvedLoans and not paid
-            ...(state.approvedLoans.some(l => l.id === loanId) && updatedLoan.status !== 'Paid' && {
-              activeLoans: [...state.activeLoans, updatedLoan]
-            }),
-            completedLoans: updatedLoan.status === 'Paid'
-              ? [...state.completedLoans, updatedLoan]
-              : state.completedLoans,
-          };
-        });
+          // Update local store
+          set((state) => {
+            const updatedLoans = state.loans.map(l => 
+              (l.id === loanId || l._id === loanId) ? updatedLoan : l
+            );
+            
+            return {
+              loans: updatedLoans,
+              activeLoans: state.activeLoans.some(l => l.id === loanId || l._id === loanId)
+                ? updatedLoan.status === 'Paid' 
+                  ? state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId)
+                  : state.activeLoans.map(l => (l.id === loanId || l._id === loanId) ? updatedLoan : l)
+                : state.activeLoans,
+              approvedLoans: state.approvedLoans.some(l => l.id === loanId || l._id === loanId)
+                ? state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId)
+                : state.approvedLoans,
+              ...(state.approvedLoans.some(l => l.id === loanId || l._id === loanId) && updatedLoan.status !== 'Paid' && {
+                activeLoans: [...state.activeLoans, updatedLoan]
+              }),
+              completedLoans: updatedLoan.status === 'Paid'
+                ? [...state.completedLoans, updatedLoan]
+                : state.completedLoans,
+            };
+          });
 
-        // Record payment for EMI Management synchronization
-        get().recordPayment({
-          id: `PAY${Date.now()}`,
-          loanId: loanId,
-          amount: paymentData.amount,
-          paymentMode: paymentData.paymentMode,
-          date: paymentData.paymentDate,
-          collectedBy: paymentData.collectedBy || 'collections',
-          transactionId: paymentData.transactionId || '',
-          emiNumber: (loan.emisPaid || 0) + 1,
-          createdAt: new Date().toISOString(),
-        });
+          // Record payment for EMI Management synchronization
+          get().recordPayment({
+            id: `PAY${Date.now()}`,
+            loanId: loanId,
+            amount: paymentData.amount,
+            paymentMode: paymentData.paymentMode,
+            date: paymentData.paymentDate,
+            collectedBy: paymentData.collectedBy || 'collections',
+            transactionId: paymentData.transactionId || '',
+            emiNumber: (updatedLoan.emisPaid || 0),
+            createdAt: new Date().toISOString(),
+          });
 
-        return true;
+          return true;
+        } catch (error) {
+          console.error('Failed to collect payment:', error);
+          throw error;
+        }
       },
 
       // Get loans by status

@@ -26,9 +26,13 @@ const calculateNextEMIDueDate = (loanDateStr) => {
 
 export default function LoanOrigination() {
   const navigate = useNavigate()
-  const { loans, verifiedLoans, approveLoan, rejectLoan, setNextDueDate, getStatistics } = loanStore()
+  const { loans, verifiedLoans, approveLoan, rejectLoan, setNextDueDate, getStatistics, fetchLoans, loading } = loanStore()
   const [selectedLoan, setSelectedLoan] = useState(null)
   const [showApprovalModal, setShowApprovalModal] = useState(false)
+  
+  useEffect(() => {
+    fetchLoans()
+  }, [])
   
   const stats = getStatistics()
 

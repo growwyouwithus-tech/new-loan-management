@@ -1,15 +1,123 @@
-  import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, Calendar, CreditCard, ChevronDown, ChevronUp, Briefcase, Banknote, Building, Hash, ChevronsRight, ArrowRight, ArrowLeft, Printer } from 'lucide-react';
+import { User, Phone, Calendar, CreditCard, ChevronDown, ChevronUp, Briefcase, Banknote, Building, Hash, ChevronsRight, ArrowRight, ArrowLeft, Printer, X, Camera } from 'lucide-react';
 import loanStore from '../../store/loanStore';
 import fileIcon from '../../assets/file.png';
 import cameraIcon from '../../assets/camera.png';
 import '../../styles/printStyles.css';
+
+// Camera Modal Component
+const CameraModal = ({ isOpen, onClose, onCapture }) => {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [stream, setStream] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => stopCamera();
+  }, [isOpen]);
+
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Camera access error:', err);
+      setError('Camera access denied. Please allow camera permission.');
+      toast.error('Camera access denied');
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          onCapture(file);
+          stopCamera();
+          onClose();
+        }
+      }, 'image/jpeg', 0.95);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+      <div className="relative bg-white rounded-lg p-4 max-w-2xl w-full mx-4">
+        <button
+          onClick={() => { stopCamera(); onClose(); }}
+          className="absolute top-2 right-2 z-10 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        
+        <div className="text-center">
+          <h3 className="text-xl font-bold mb-4">Take Photo</h3>
+          
+          {error ? (
+            <div className="p-4 bg-red-50 text-red-600 rounded-lg">
+              {error}
+            </div>
+          ) : (
+            <>
+              <div className="relative bg-black rounded-lg overflow-hidden mb-4">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-auto"
+                />
+              </div>
+              
+              <button
+                onClick={capturePhoto}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center mx-auto gap-2"
+              >
+                <Camera className="h-5 w-5" />
+                Capture Photo
+              </button>
+            </>
+          )}
+        </div>
+        
+        <canvas ref={canvasRef} className="hidden" />
+      </div>
+    </div>
+  );
+};
 
 // Reusable Input Component
 const FormInput = ({ name, label, register, errors, icon: Icon, className = '', isMissing = false, ...props }) => (
@@ -31,13 +139,14 @@ const FormInput = ({ name, label, register, errors, icon: Icon, className = '', 
 // Reusable File Input
 const FileInput = ({ name, label, register, errors, resetKey, isMissing = false }) => {
   const [selectedFile, setSelectedFile] = useState(null);
-  const cameraInputRef = React.useRef(null);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const fileInputRef = React.useRef(null);
   const galleryInputRef = React.useRef(null);
 
   // Reset selected file when resetKey changes
   useEffect(() => {
     setSelectedFile(null);
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
   }, [resetKey]);
 
@@ -48,11 +157,36 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
     onChange: onChangeRHF,
   } = register(name);
 
-  const handleFileChange = (e) => {
+  const handleCameraCapture = (file) => {
+    setSelectedFile(file.name);
+    
+    // Create a synthetic event for react-hook-form
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.files = dataTransfer.files;
+      const event = new Event('change', { bubbles: true });
+      Object.defineProperty(event, 'target', { value: fileInputRef.current, enumerable: true });
+      onChangeRHF(event);
+    }
+    
+    if (galleryInputRef.current) {
+      galleryInputRef.current.files = dataTransfer.files;
+    }
+  };
+
+  const handleGalleryChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file.name);
       onChangeRHF(e);
+      // Sync file input
+      if (fileInputRef.current) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInputRef.current.files = dataTransfer.files;
+      }
     }
   };
 
@@ -63,31 +197,27 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
         <input
           type="file"
           accept="image/*"
-          capture="environment"
           name={fieldName}
           ref={(el) => {
             ref(el);
-            cameraInputRef.current = el;
+            fileInputRef.current = el;
           }}
           onBlur={onBlur}
           className="hidden"
-          id={`file-${name}-camera`}
-          onChange={handleFileChange}
+          id={`file-${name}-hidden`}
         />
         <input
           type="file"
           accept="image/*"
-          name={fieldName}
-          ref={(el) => {
-            galleryInputRef.current = el;
-          }}
           className="hidden"
           id={`file-${name}-gallery`}
-          onChange={handleFileChange}
+          onChange={handleGalleryChange}
+          ref={galleryInputRef}
         />
         <div className="flex items-center justify-start space-x-3">
-          <label
-            htmlFor={`file-${name}-camera`}
+          <button
+            type="button"
+            onClick={() => setShowCameraModal(true)}
             className={`flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${isMissing ? 'opacity-60' : ''}`}
           >
             <img
@@ -95,7 +225,7 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
               alt="camera"
               className="h-8 w-8"
             />
-          </label>
+          </button>
           <label
             htmlFor={`file-${name}-gallery`}
             className={`flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${isMissing ? 'opacity-60' : ''}`}
@@ -111,6 +241,11 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
           )}
         </div>
       </div>
+      <CameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={handleCameraCapture}
+      />
       {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name].message}</p>}
       {isMissing && !errors[name] && <p className="mt-1 text-sm text-red-600">This field is required</p>}
     </div>

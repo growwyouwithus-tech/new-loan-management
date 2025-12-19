@@ -6,78 +6,7 @@ import { toast } from 'react-toastify';
 import { Search, RotateCcw, Check, X, Clock, UserCheck, Eye, Play, Pause, ThumbsDown } from 'lucide-react';
 import loanStore from '../../store/loanStore';
 
-// Mock data
-const mockLoans = [
-  {
-    id: 1,
-    clientName: 'Rahul Sharma',
-    aadharNumber: '1234-5678-9012',
-    appliedDate: '2025-10-15',
-    verifiedDate: '2025-10-16',
-    month: 'October',
-    status: 'Waiting',
-    productName: 'Home Loan',
-    price: 500000,
-    tenure: '5 years',
-    emi: 9250,
-    downPayment: 100000,
-    bankName: 'SBI',
-    paymentMode: 'EMI',
-    guarantor: {
-      name: 'Vikram Singh',
-      relation: 'Friend',
-      mobile: '9876543200',
-      aadhar: '1122 3344 5566',
-      address: '456, Connaught Place, New Delhi - 110001'
-    }
-  },
-  {
-    id: 2,
-    clientName: 'Priya Patel',
-    aadharNumber: '2345-6789-0123',
-    appliedDate: '2025-11-10',
-    verifiedDate: '2025-11-11',
-    month: 'November',
-    status: 'Approved',
-    productName: 'Personal Loan',
-    price: 300000,
-    tenure: '3 years',
-    emi: 9250,
-    downPayment: 50000,
-    bankName: 'HDFC',
-    paymentMode: 'EMI',
-    guarantor: {
-      name: 'Rahul Mehta',
-      relation: 'Brother',
-      mobile: '8765432111',
-      aadhar: '2233 4455 6677',
-      address: '789, Andheri West, Mumbai - 400053'
-    }
-  },
-  {
-    id: 3,
-    clientName: 'Amit Kumar',
-    aadharNumber: '3456-7890-1234',
-    appliedDate: '2025-10-28',
-    verifiedDate: '2025-10-29',
-    month: 'October',
-    status: 'Rejected',
-    productName: 'Car Loan',
-    price: 800000,
-    tenure: '7 years',
-    emi: 11000,
-    downPayment: 160000,
-    bankName: 'ICICI',
-    paymentMode: 'EMI',
-    guarantor: {
-      name: 'Arjun Reddy',
-      relation: 'Cousin',
-      mobile: '7654321000',
-      aadhar: '3344 5566 7788',
-      address: '101, Indiranagar, Bengaluru - 560038'
-    }
-  }
-];
+// Using real API data from loanStore - no mock data
 
 const statusColors = {
   Verified: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',

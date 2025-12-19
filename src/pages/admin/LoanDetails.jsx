@@ -1,17 +1,31 @@
 import { useParams } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import { mockLoans, mockRepayments } from '../../api/mockData'
+import loanStore from '../../store/loanStore'
 import { FileText, User, Store, Calendar, DollarSign } from 'lucide-react'
 
 export default function LoanDetails() {
   const { id } = useParams()
-  const loan = mockLoans.find((l) => l.id === id)
+  const { loans, fetchLoans, loading } = loanStore()
+  
+  useEffect(() => {
+    fetchLoans()
+  }, [])
+  
+  const loan = loans.find((l) => l.id === id || l._id === id)
 
-  if (!loan) {
-    return <div>Loan not found</div>
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">Loading...</div>
   }
+  
+  if (!loan) {
+    return <div className="flex items-center justify-center h-64">Loan not found</div>
+  }
+  
+  // Calculate repayments from loan data
+  const mockRepayments = loan.payments || []
 
   return (
     <div className="space-y-6">

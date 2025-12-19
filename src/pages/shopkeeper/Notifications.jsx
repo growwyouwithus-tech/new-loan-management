@@ -1,15 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import { mockNotifications } from '../../api/mockData'
-import { useState } from 'react'
+import notificationStore from '../../store/notificationStore'
+import { useEffect } from 'react'
 import { Trash2 } from 'lucide-react'
 
 export default function ShopkeeperNotifications() {
-  const [notifications, setNotifications] = useState(mockNotifications)
+  const { notifications, getRecentNotifications, clearNotification, clearAllNotifications: clearAll } = notificationStore()
+  
+  useEffect(() => {
+    getRecentNotifications()
+  }, [])
 
   const clearAllNotifications = () => {
-    setNotifications([])
+    clearAll()
   }
 
   return (

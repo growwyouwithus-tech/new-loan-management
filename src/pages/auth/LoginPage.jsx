@@ -28,8 +28,8 @@ export default function LoginPage() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'testadmin@example.com',
-      password: 'Test@123',
+      email: 'admin@loanmanagement.com',
+      password: 'admin123',
     },
   })
 
@@ -128,10 +128,17 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-              <p className="font-semibold">Test Credentials:</p>
-              <p>Admin: testadmin@example.com / Test@123</p>
-              <p>Shopkeeper: Use your Email / Password</p>
-              <p className="text-xs mt-2">Note: Shopkeepers are created from Admin Panel</p>
+              <p className="font-semibold text-green-600 dark:text-green-400">✅ Real Database Credentials (7 Users):</p>
+              <div className="space-y-1 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+                <p className="font-medium">Admin: admin@loanmanagement.com / admin123</p>
+                <p>Verifier: verifier@loanmanagement.com / verifier123</p>
+                <p>Collections: collections@loanmanagement.com / collections123</p>
+                <p>Supporter: supporter@loanmanagement.com / supporter123</p>
+                <p>Credit Manager: creditmanager@loanmanagement.com / credit123</p>
+                <p>Shopkeeper 1: shopkeeper1@example.com / shop123</p>
+                <p>Shopkeeper 2: shopkeeper2@example.com / shop123</p>
+              </div>
+              <p className="text-xs mt-2 text-green-600 dark:text-green-400">✓ Database: MongoDB Atlas (Connected)</p>
             </div>
           </CardContent>
         </Card>

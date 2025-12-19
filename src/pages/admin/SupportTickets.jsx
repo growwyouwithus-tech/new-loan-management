@@ -2,11 +2,10 @@ import { useState } from 'react'
 import Table from '../../components/ui/Table'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import { mockTickets } from '../../api/mockData'
 import { Plus } from 'lucide-react'
 
 export default function SupportTickets() {
-  const [tickets] = useState(mockTickets)
+  const [tickets] = useState([])
 
   const columns = [
     { accessorKey: 'id', header: 'Ticket ID' },
@@ -48,7 +47,14 @@ export default function SupportTickets() {
           New Ticket
         </Button>
       </div>
-      <Table columns={columns} data={tickets} />
+      {tickets.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p className="text-gray-500 dark:text-gray-400">No support tickets available</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">API endpoint not implemented yet</p>
+        </div>
+      ) : (
+        <Table columns={columns} data={tickets} />
+      )}
     </div>
   )
 }

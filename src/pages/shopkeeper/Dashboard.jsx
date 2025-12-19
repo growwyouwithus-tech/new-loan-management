@@ -4,17 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { DollarSign, FileText, Users, TrendingUp, Clock, CheckCircle, CalendarCheck, Clock3, CheckCircle2 } from 'lucide-react'
 import loanStore from '../../store/loanStore'
 
-const mockData = {
-  totalLoans: 25,
-  activeLoans: 8,
-  todayCollections: 45000,
-  availableCredit: 320000,
-  commission: 12500,
-  customers: 42,
-  monthlyEmiCollection: 125,
-  pendingEmis: 28,
-  collectedEmis: 97,
-}
 
 const collectionData = [
   { date: '01', amount: 35000 },

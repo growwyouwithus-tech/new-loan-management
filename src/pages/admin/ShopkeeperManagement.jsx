@@ -31,8 +31,13 @@ export default function ShopkeeperManagement() {
   const [shopImage, setShopImage] = useState(null)
   const [showPassword, setShowPassword] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
+  const [showCameraModal, setShowCameraModal] = useState(false)
+  const [cameraType, setCameraType] = useState(null)
+  const [stream, setStream] = useState(null)
   const ownerFileInputRef = useRef(null)
   const shopFileInputRef = useRef(null)
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
 
   // Filter shopkeepers based on search term
   const filteredShopkeepers = localShopkeepers.filter(shopkeeper => {
@@ -104,11 +109,53 @@ export default function ShopkeeperManagement() {
     }
   }
 
-  const openCamera = () => {
-    // This is a placeholder for actual camera access
-    // In a real app, you would use the device camera API
-    toast.info('Camera functionality would open here in a real app')
-    setShowCameraOptions(false)
+  const openCamera = async (type) => {
+    setCameraType(type)
+    setShowCameraModal(true)
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' },
+        audio: false 
+      })
+      setStream(mediaStream)
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error)
+      toast.error('Camera access denied or not available')
+      setShowCameraModal(false)
+    }
+  }
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(video, 0, 0)
+      const photoData = canvas.toDataURL('image/jpeg')
+      
+      if (cameraType === 'owner') {
+        setOwnerPhoto(photoData)
+      } else {
+        setShopImage(photoData)
+      }
+      
+      stopCamera()
+      toast.success('Photo captured successfully')
+    }
+  }
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop())
+      setStream(null)
+    }
+    setShowCameraModal(false)
+    setCameraType(null)
   }
 
   const columns = [
@@ -657,7 +704,7 @@ export default function ShopkeeperManagement() {
                       variant="outline" 
                       size="sm"
                       className="flex items-center gap-2"
-                      onClick={openCamera}
+                      onClick={() => openCamera('owner')}
                     >
                       <Camera className="w-4 h-4" />
                       <span>Take Photo</span>
@@ -727,7 +774,7 @@ export default function ShopkeeperManagement() {
                       variant="outline" 
                       size="sm"
                       className="flex items-center gap-2"
-                      onClick={openCamera}
+                      onClick={() => openCamera('shop')}
                     >
                       <Camera className="w-4 h-4" />
                       <span>Take Photo</span>
@@ -899,6 +946,45 @@ export default function ShopkeeperManagement() {
           </div>
         )}
       </Modal>
+
+      {/* Camera Modal */}
+      {showCameraModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="relative bg-white rounded-lg p-4 max-w-2xl w-full mx-4">
+            <button
+              onClick={stopCamera}
+              className="absolute top-2 right-2 z-10 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+              {cameraType === 'owner' ? 'Capture Owner Photo' : 'Capture Shop Image'}
+            </h3>
+            
+            <div className="relative">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full rounded-lg"
+              />
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+            
+            <div className="mt-4 flex justify-center">
+              <Button
+                onClick={capturePhoto}
+                variant="success"
+                className="flex items-center gap-2"
+              >
+                <Camera className="h-5 w-5" />
+                Capture Photo
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

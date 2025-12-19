@@ -15,7 +15,7 @@ const Button = forwardRef(({
   const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
   
   const variants = {
-    primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+    primary: '!bg-green-500 !text-white hover:!bg-green-600 dark:!bg-green-600 dark:hover:!bg-green-700',
     secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
     destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
     success: '!bg-green-500 !text-white hover:!bg-green-600 dark:!bg-green-600 dark:hover:!bg-green-700',

@@ -64,8 +64,13 @@ const loanStore = create(
       // Add a new loan application (from shopkeeper)
       addLoanApplication: async (loanData) => {
         try {
+          console.log('Submitting loan application:', loanData);
+          
           // Save to backend first
-          const newLoan = await loanService.createLoan(loanData);
+          const response = await loanService.createLoan(loanData);
+          console.log('Backend response:', response);
+          
+          const newLoan = response.loan || response;
           
           // Update local store with backend response
           set((state) => ({
@@ -88,6 +93,7 @@ const loanStore = create(
           return newLoan;
         } catch (error) {
           console.error('Failed to create loan:', error);
+          console.error('Error details:', error.response?.data);
           throw error;
         }
       },
@@ -194,26 +200,33 @@ const loanStore = create(
       // Collections officer actions
       collectPayment: async (loanId, paymentData) => {
         try {
+          console.log('Collecting payment for loan:', loanId);
+          console.log('Payment data:', paymentData);
+          
           // Save payment to backend first
-          const updatedLoan = await loanService.collectPayment(loanId, paymentData);
+          const response = await loanService.collectPayment(loanId, paymentData);
+          console.log('Backend response:', response);
+          
+          // Extract loan from response (backend returns { message, loan, payment })
+          const updatedLoan = response.loan || response;
           
           // Update local store
           set((state) => {
             const updatedLoans = state.loans.map(l => 
-              (l.id === loanId || l._id === loanId) ? updatedLoan : l
+              (l.id === loanId || l._id === loanId || String(l._id) === String(loanId)) ? updatedLoan : l
             );
             
             return {
               loans: updatedLoans,
-              activeLoans: state.activeLoans.some(l => l.id === loanId || l._id === loanId)
+              activeLoans: state.activeLoans.some(l => l.id === loanId || l._id === loanId || String(l._id) === String(loanId))
                 ? updatedLoan.status === 'Paid' 
-                  ? state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId)
-                  : state.activeLoans.map(l => (l.id === loanId || l._id === loanId) ? updatedLoan : l)
+                  ? state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId && String(l._id) !== String(loanId))
+                  : state.activeLoans.map(l => (l.id === loanId || l._id === loanId || String(l._id) === String(loanId)) ? updatedLoan : l)
                 : state.activeLoans,
-              approvedLoans: state.approvedLoans.some(l => l.id === loanId || l._id === loanId)
-                ? state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId)
+              approvedLoans: state.approvedLoans.some(l => l.id === loanId || l._id === loanId || String(l._id) === String(loanId))
+                ? state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId && String(l._id) !== String(loanId))
                 : state.approvedLoans,
-              ...(state.approvedLoans.some(l => l.id === loanId || l._id === loanId) && updatedLoan.status !== 'Paid' && {
+              ...(state.approvedLoans.some(l => l.id === loanId || l._id === loanId || String(l._id) === String(loanId)) && updatedLoan.status !== 'Paid' && {
                 activeLoans: [...state.activeLoans, updatedLoan]
               }),
               completedLoans: updatedLoan.status === 'Paid'
@@ -221,6 +234,9 @@ const loanStore = create(
                 : state.completedLoans,
             };
           });
+
+          console.log('Updated loan in store:', updatedLoan);
+          console.log('Payments array:', updatedLoan.payments);
 
           // Record payment for EMI Management synchronization
           get().recordPayment({
@@ -238,6 +254,7 @@ const loanStore = create(
           return true;
         } catch (error) {
           console.error('Failed to collect payment:', error);
+          console.error('Error details:', error.response?.data);
           throw error;
         }
       },
@@ -314,16 +331,16 @@ const loanStore = create(
 
       // Delete loan
       deleteLoan: (loanId) => {
-        const loan = get().loans.find(l => l.id === loanId);
+        const loan = get().loans.find(l => l.id === loanId || l._id === loanId);
         if (!loan) return false;
 
         set((state) => ({
-          loans: state.loans.filter(l => l.id !== loanId),
-          pendingLoans: state.pendingLoans.filter(l => l.id !== loanId),
-          verifiedLoans: state.verifiedLoans.filter(l => l.id !== loanId),
-          approvedLoans: state.approvedLoans.filter(l => l.id !== loanId),
-          activeLoans: state.activeLoans.filter(l => l.id !== loanId),
-          completedLoans: state.completedLoans.filter(l => l.id !== loanId),
+          loans: state.loans.filter(l => l.id !== loanId && l._id !== loanId),
+          pendingLoans: state.pendingLoans.filter(l => l.id !== loanId && l._id !== loanId),
+          verifiedLoans: state.verifiedLoans.filter(l => l.id !== loanId && l._id !== loanId),
+          approvedLoans: state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId),
+          activeLoans: state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId),
+          completedLoans: state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId),
         }));
 
         return true;

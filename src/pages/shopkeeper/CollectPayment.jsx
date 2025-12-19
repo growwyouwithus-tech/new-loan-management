@@ -50,12 +50,14 @@ export default function CollectPayment() {
 
   // Apply filters by client name and Aadhar number
   const filteredLoans = loans.filter((loan) => {
+    const clientName = loan.clientName || loan.customerName || '';
     const matchesName = searchName
-      ? loan.clientName?.toLowerCase().includes(searchName.toLowerCase())
+      ? clientName.toLowerCase().includes(searchName.toLowerCase())
       : true
 
+    const aadharNumber = loan.clientAadharNumber || loan.customerAadhaar || '';
     const matchesAadhar = searchAadhar
-      ? (loan.clientAadharNumber || '').includes(searchAadhar)
+      ? aadharNumber.includes(searchAadhar)
       : true
 
     return matchesName && matchesAadhar
@@ -82,11 +84,14 @@ export default function CollectPayment() {
       console.log('Form data:', data);
       console.log('Available loans:', loans);
       
-      // Convert loanId to number for comparison
-      const loanId = parseInt(data.loanId);
-      const selectedLoan = loans.find(l => l.id === loanId)
+      // Find loan by matching both id and _id
+      const loanIdFromForm = data.loanId;
+      const selectedLoan = loans.find(l => 
+        String(l.id) === String(loanIdFromForm) || 
+        String(l._id) === String(loanIdFromForm)
+      )
       
-      console.log('Looking for loan ID:', loanId);
+      console.log('Looking for loan ID:', loanIdFromForm);
       console.log('Found loan:', selectedLoan);
       
       if (!selectedLoan) {
@@ -117,7 +122,10 @@ export default function CollectPayment() {
       await db.payments.add(paymentRecord)
       
       // Update loan store with payment using collectPayment function
-      const success = collectPayment(loanId, {
+      // Use _id for MongoDB loans
+      const backendLoanId = selectedLoan._id || selectedLoan.id;
+      
+      await collectPayment(backendLoanId, {
         amount: parseFloat(data.amount),
         paymentMode: data.method,
         paymentDate: paymentRecord.date,
@@ -126,18 +134,17 @@ export default function CollectPayment() {
         emiNumber: emiNumber
       })
 
-      if (success) {
-        // Also record in payments array for EMI Management
-        recordPayment(paymentRecord)
-        
-        toast.success(`EMI #${emiNumber} payment recorded successfully!`)
-        reset()
-        setSelectedLoan(null)
-      } else {
-        toast.error('Failed to record payment')
-      }
+      // Also record in payments array for EMI Management
+      recordPayment(paymentRecord)
+      
+      toast.success(`EMI #${emiNumber} payment recorded successfully!`)
+      reset()
+      setSelectedLoan(null)
+      setSearchName('')
+      setSearchAadhar('')
     } catch (error) {
-      toast.error('Failed to record payment')
+      console.error('Payment error:', error)
+      toast.error(error.response?.data?.message || 'Failed to record payment')
     }
   }
 
@@ -172,6 +179,7 @@ export default function CollectPayment() {
                       onChange={(e) => {
                         setSearchName(e.target.value)
                         setSelectedLoan(null)
+                        setValue('loanId', '')
                       }}
                       placeholder="Enter client name"
                     />
@@ -183,20 +191,7 @@ export default function CollectPayment() {
                       onChange={(e) => {
                         setSearchAadhar(e.target.value)
                         setSelectedLoan(null)
-                        
-                        // Auto-select first matching loan when Aadhar is entered
-                        if (e.target.value.trim()) {
-                          const matchingLoan = loans.find(loan => 
-                            (loan.clientAadharNumber || '').includes(e.target.value)
-                          )
-                          if (matchingLoan) {
-                            setTimeout(() => {
-                              setSelectedLoan(matchingLoan)
-                              const emiAmount = matchingLoan.emiAmount || matchingLoan.loanAmount || 0
-                              setValue('amount', emiAmount)
-                            }, 300)
-                          }
-                        }
+                        setValue('loanId', '')
                       }}
                       placeholder="Enter Aadhar number"
                     />
@@ -217,8 +212,11 @@ export default function CollectPayment() {
                 <Select
                   {...register('loanId')}
                   onChange={(e) => {
-                    const loanId = parseInt(e.target.value)
-                    const loan = loans.find((l) => l.id === loanId)
+                    const loanIdValue = e.target.value
+                    const loan = loans.find((l) => 
+                      String(l.id) === String(loanIdValue) || 
+                      String(l._id) === String(loanIdValue)
+                    )
                     setSelectedLoan(loan)
                     
                     // Auto-fill form fields when loan is selected
@@ -230,8 +228,8 @@ export default function CollectPayment() {
                 >
                   <option value="">Select loan</option>
                   {filteredLoans.map((loan) => (
-                    <option key={loan.id} value={loan.id}>
-                      {loan.loanId || loan.id} - {loan.clientName} - ₹{loan.emiAmount || 'N/A'}
+                    <option key={loan._id || loan.id} value={loan._id || loan.id}>
+                      {loan.loanId || loan.id} - {loan.clientName || loan.customerName} - ₹{loan.emiAmount || 'N/A'}
                     </option>
                   ))}
                 </Select>

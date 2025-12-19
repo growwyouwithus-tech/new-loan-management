@@ -113,17 +113,28 @@ export default function ShopkeeperManagement() {
     setCameraType(type)
     setShowCameraModal(true)
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' },
-        audio: false 
-      })
+      let mediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false 
+        })
+      } catch (err) {
+        console.warn('Environment camera failed, trying default camera:', err)
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: true,
+          audio: false 
+        })
+      }
       setStream(mediaStream)
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream
+        videoRef.current.setAttribute('playsinline', 'true')
+        videoRef.current.setAttribute('webkit-playsinline', 'true')
       }
     } catch (error) {
       console.error('Error accessing camera:', error)
-      toast.error('Camera access denied or not available')
+      toast.error('Camera access denied. Please check browser permissions.')
       setShowCameraModal(false)
     }
   }
@@ -949,16 +960,16 @@ export default function ShopkeeperManagement() {
 
       {/* Camera Modal */}
       {showCameraModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
-          <div className="relative bg-white rounded-lg p-4 max-w-2xl w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-2">
+          <div className="relative bg-white rounded-lg p-3 md:p-4 max-w-2xl w-full mx-2 md:mx-4 max-h-[95vh] overflow-y-auto">
             <button
               onClick={stopCamera}
-              className="absolute top-2 right-2 z-10 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+              className="absolute top-1 right-1 md:top-2 md:right-2 z-10 p-1.5 md:p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 md:h-5 md:w-5" />
             </button>
             
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+            <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900">
               {cameraType === 'owner' ? 'Capture Owner Photo' : 'Capture Shop Image'}
             </h3>
             
@@ -967,18 +978,19 @@ export default function ShopkeeperManagement() {
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className="w-full rounded-lg"
+                muted
+                className="w-full rounded-lg max-h-[60vh]"
               />
               <canvas ref={canvasRef} className="hidden" />
             </div>
             
-            <div className="mt-4 flex justify-center">
+            <div className="mt-3 md:mt-4 flex justify-center">
               <Button
                 onClick={capturePhoto}
                 variant="success"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 text-sm md:text-base"
               >
-                <Camera className="h-5 w-5" />
+                <Camera className="h-4 w-4 md:h-5 md:w-5" />
                 Capture Photo
               </Button>
             </div>

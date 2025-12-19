@@ -29,19 +29,30 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false
-      });
+      let mediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+      } catch (err) {
+        console.warn('Environment camera failed, trying default camera:', err);
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      }
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
       }
       setError(null);
     } catch (err) {
       console.error('Camera access error:', err);
-      setError('Camera access denied. Please allow camera permission.');
-      toast.error('Camera access denied');
+      setError('Camera access denied. Please allow camera permission in your browser settings.');
+      toast.error('Camera access denied. Please check permissions.');
     }
   };
 
@@ -75,38 +86,39 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
-      <div className="relative bg-white rounded-lg p-4 max-w-2xl w-full mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-2">
+      <div className="relative bg-white rounded-lg p-3 md:p-4 max-w-2xl w-full mx-2 md:mx-4 max-h-[95vh] overflow-y-auto">
         <button
           onClick={() => { stopCamera(); onClose(); }}
-          className="absolute top-2 right-2 z-10 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+          className="absolute top-1 right-1 md:top-2 md:right-2 z-10 p-1.5 md:p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4 md:h-5 md:w-5" />
         </button>
         
         <div className="text-center">
-          <h3 className="text-xl font-bold mb-4">Take Photo</h3>
+          <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Take Photo</h3>
           
           {error ? (
-            <div className="p-4 bg-red-50 text-red-600 rounded-lg">
+            <div className="p-3 md:p-4 bg-red-50 text-red-600 rounded-lg text-sm md:text-base">
               {error}
             </div>
           ) : (
             <>
-              <div className="relative bg-black rounded-lg overflow-hidden mb-4">
+              <div className="relative bg-black rounded-lg overflow-hidden mb-3 md:mb-4">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
-                  className="w-full h-auto"
+                  muted
+                  className="w-full h-auto max-h-[60vh]"
                 />
               </div>
               
               <button
                 onClick={capturePhoto}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center mx-auto gap-2"
+                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center mx-auto gap-2 text-sm md:text-base"
               >
-                <Camera className="h-5 w-5" />
+                <Camera className="h-4 w-4 md:h-5 md:w-5" />
                 Capture Photo
               </button>
             </>
@@ -139,6 +151,7 @@ const FormInput = ({ name, label, register, errors, icon: Icon, className = '', 
 // Reusable File Input
 const FileInput = ({ name, label, register, errors, resetKey, isMissing = false }) => {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const fileInputRef = React.useRef(null);
   const galleryInputRef = React.useRef(null);
@@ -146,6 +159,7 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
   // Reset selected file when resetKey changes
   useEffect(() => {
     setSelectedFile(null);
+    setPreviewUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
   }, [resetKey]);
@@ -157,8 +171,19 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
     onChange: onChangeRHF,
   } = register(name);
 
+  const createPreview = (file) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCameraCapture = (file) => {
     setSelectedFile(file.name);
+    createPreview(file);
     
     // Create a synthetic event for react-hook-form
     const dataTransfer = new DataTransfer();
@@ -180,6 +205,7 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file.name);
+      createPreview(file);
       onChangeRHF(e);
       // Sync file input
       if (fileInputRef.current) {
@@ -214,30 +240,41 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
           onChange={handleGalleryChange}
           ref={galleryInputRef}
         />
-        <div className="flex items-center justify-start space-x-3">
-          <button
-            type="button"
-            onClick={() => setShowCameraModal(true)}
-            className={`flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${isMissing ? 'opacity-60' : ''}`}
-          >
-            <img
-              src={cameraIcon}
-              alt="camera"
-              className="h-8 w-8"
-            />
-          </button>
-          <label
-            htmlFor={`file-${name}-gallery`}
-            className={`flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${isMissing ? 'opacity-60' : ''}`}
-          >
-            <img
-              src={fileIcon}
-              alt="gallery"
-              className="h-8 w-8"
-            />
-          </label>
-          {selectedFile && (
-            <span className="ml-2 text-sm text-gray-600">{selectedFile}</span>
+        <div className="space-y-3">
+          <div className="flex items-center justify-start space-x-3">
+            <button
+              type="button"
+              onClick={() => setShowCameraModal(true)}
+              className={`flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${isMissing ? 'opacity-60' : ''}`}
+            >
+              <img
+                src={cameraIcon}
+                alt="camera"
+                className="h-8 w-8"
+              />
+            </button>
+            <label
+              htmlFor={`file-${name}-gallery`}
+              className={`flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${isMissing ? 'opacity-60' : ''}`}
+            >
+              <img
+                src={fileIcon}
+                alt="gallery"
+                className="h-8 w-8"
+              />
+            </label>
+            {selectedFile && (
+              <span className="ml-2 text-sm text-gray-600">{selectedFile}</span>
+            )}
+          </div>
+          {previewUrl && (
+            <div className="mt-3">
+              <img 
+                src={previewUrl} 
+                alt="Preview" 
+                className="w-32 h-32 object-cover rounded-lg border-2 border-green-500 shadow-md"
+              />
+            </div>
           )}
         </div>
       </div>
@@ -280,28 +317,49 @@ const AddressFields = ({ register, errors, isOpen, toggle, prefix = '', missingF
 // Zod Schemas
 const fileSchema = z.any().optional();
 
-const clientObjectSchema = z.object({
-  fullName: z.string().optional(),
-  fatherOrSpouseName: z.string().optional(),
-  gender: z.string().optional(),
-  mobile: z.string().optional(),
-  workingAddress: z.string().optional(),
-  houseNo: z.string().optional(),
-  galiNo: z.string().optional(),
-  colony: z.string().optional(),
-  landmark: z.string().optional(),
-  city: z.string().optional(),
-  pincode: z.string().optional(),
-  state: z.string().optional(),
-  photo: fileSchema,
-  aadharNumber: z.string().optional(),
-  aadharFront: fileSchema,
-  aadharBack: fileSchema,
-  panNumber: z.string().optional(),
-  panFront: fileSchema,
+// For SELF mode - all fields required same as MAX_BORN_GROUP
+const clientSelfSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  fatherOrSpouseName: z.string().min(1, 'Father/Spouse name is required'),
+  gender: z.string().min(1, 'Gender is required'),
+  mobile: z.string().min(10, 'Valid mobile number is required').max(10, 'Mobile number must be 10 digits'),
+  workingAddress: z.string().min(1, 'Working address is required'),
+  houseNo: z.string().min(1, 'House number is required'),
+  galiNo: z.string().min(1, 'Gali/Street is required'),
+  colony: z.string().min(1, 'Colony is required'),
+  landmark: z.string().min(1, 'Landmark is required'),
+  city: z.string().min(1, 'City is required'),
+  pincode: z.string().min(6, 'Valid pincode is required').max(6, 'Pincode must be 6 digits'),
+  state: z.string().min(1, 'State is required'),
+  photo: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'Photo is required'),
+  aadharNumber: z.string().min(12, 'Aadhar number must be 12 digits').max(12, 'Aadhar number must be 12 digits'),
+  aadharFront: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'Aadhar front photo is required'),
+  aadharBack: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'Aadhar back photo is required'),
+  panNumber: z.string().min(10, 'PAN number must be 10 characters').max(10, 'PAN number must be 10 characters'),
+  panFront: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'PAN photo is required'),
 });
 
-const clientSchema = clientObjectSchema;
+// For MAX_BORN_GROUP mode - all fields required
+const clientMaxBornSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  fatherOrSpouseName: z.string().min(1, 'Father/Spouse name is required'),
+  gender: z.string().min(1, 'Gender is required'),
+  mobile: z.string().min(10, 'Valid mobile number is required').max(10, 'Mobile number must be 10 digits'),
+  workingAddress: z.string().min(1, 'Working address is required'),
+  houseNo: z.string().min(1, 'House number is required'),
+  galiNo: z.string().min(1, 'Gali/Street is required'),
+  colony: z.string().min(1, 'Colony is required'),
+  landmark: z.string().min(1, 'Landmark is required'),
+  city: z.string().min(1, 'City is required'),
+  pincode: z.string().min(6, 'Valid pincode is required').max(6, 'Pincode must be 6 digits'),
+  state: z.string().min(1, 'State is required'),
+  photo: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'Photo is required'),
+  aadharNumber: z.string().min(12, 'Aadhar number must be 12 digits').max(12, 'Aadhar number must be 12 digits'),
+  aadharFront: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'Aadhar front photo is required'),
+  aadharBack: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'Aadhar back photo is required'),
+  panNumber: z.string().min(10, 'PAN number must be 10 characters').max(10, 'PAN number must be 10 characters'),
+  panFront: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'PAN photo is required'),
+});
 
 const guarantorSchema = z.object({
   relation: z.string().optional(),
@@ -326,21 +384,21 @@ const guarantorSchema = z.object({
 });
 
 const productSchema = z.object({
-  category: z.string().optional(),
-  productName: z.string().optional(),
-  productCompany: z.string().optional(),
+  category: z.string().min(1, 'Product category is required'),
+  productName: z.string().min(1, 'Product name is required'),
+  productCompany: z.string().min(1, 'Product company is required'),
   price: z.preprocess(
     (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
-    z.number().max(20000, 'Price cannot exceed ₹20,000').optional()
+    z.number().min(1, 'Price is required').max(20000, 'Price cannot exceed ₹20,000')
   ),
   downPayment: z.preprocess(
     (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
     z.number().optional()
   ),
-  serialNumber: z.string().optional(),
-  securityKey: z.string(),
-  tenure: z.string().optional(),
-  emiStartDate: z.string().optional(),
+  serialNumber: z.string().min(1, 'Serial number is required'),
+  securityKey: z.string().optional(),
+  tenure: z.string().min(1, 'Tenure is required'),
+  emiStartDate: z.string().min(1, 'EMI start date is required'),
 }).refine(
   (data) => {
     if (!data.price || !data.downPayment) return true;
@@ -357,7 +415,7 @@ const bankSchema = z.object({
   bankName: z.string().optional(),
   accountNumber: z.string().optional(),
   ifscCode: z.string().optional(),
-  paymentMode: z.string().optional(),
+  paymentMode: z.string().min(1, 'Payment mode is required'),
 });
 
 const shopProofSchema = z.object({
@@ -368,13 +426,14 @@ const shopProofSchema = z.object({
 });
 
 const signatureSchema = z.object({
-  signature: fileSchema,
+  signature: z.any().refine((val) => val && (val instanceof File || val instanceof FileList && val.length > 0), 'Signature is required'),
 });
 
 // Preview schema - no validation needed
 const previewSchema = z.object({});
 
-const stepSchemas = [clientSchema, guarantorSchema, productSchema, bankSchema, signatureSchema, previewSchema];
+// Will be set dynamically based on application mode
+let stepSchemas = [clientSelfSchema, guarantorSchema, productSchema, bankSchema, signatureSchema, previewSchema];
 
 export default function ApplyLoan() {
   const navigate = useNavigate();
@@ -390,7 +449,7 @@ export default function ApplyLoan() {
   const [aadhaarMatches, setAadhaarMatches] = useState([]);
   
   // Mode selection state
-  const [applicationMode, setApplicationMode] = useState(editLoan ? 'edit' : null);
+  const [applicationMode, setApplicationMode] = useState(editLoan ? (editLoan.applicationMode || 'max_born_group') : null);
   
   // Form state
   const [step, setStep] = useState(0);
@@ -411,6 +470,15 @@ export default function ApplyLoan() {
     setAadhaarSearched(false);
     setAadhaarMatches([]);
   };
+
+  // Update schemas based on application mode
+  useEffect(() => {
+    if (applicationMode === 'self') {
+      stepSchemas = [clientSelfSchema, guarantorSchema, productSchema, bankSchema, signatureSchema, previewSchema];
+    } else if (applicationMode === 'max_born_group') {
+      stepSchemas = [clientMaxBornSchema, guarantorSchema, productSchema, bankSchema, signatureSchema, previewSchema];
+    }
+  }, [applicationMode]);
 
   const currentSchema = stepSchemas[step];
   const { register, handleSubmit, watch, trigger, formState: { errors, isValid }, reset, setValue } = useForm({
@@ -778,25 +846,24 @@ export default function ApplyLoan() {
       applicationMode,
     };
 
-    try {
-      // Add to loan store
-      const newLoan = addLoanApplication(loanApplicationData);
-      
-      console.log('Loan Application Submitted:', newLoan);
-      toast.success(`Loan application submitted successfully! Loan ID: ${newLoan.loanId}`);
-      
-      // Reset form
-      resetForm();
-      
-      // Redirect to My Loans page after 1.5 seconds
-      setTimeout(() => {
-        navigate('/shopkeeper/my-loans');
-      }, 1500);
-      
-    } catch (error) {
-      console.error('Error submitting loan application:', error);
-      toast.error('Failed to submit loan application. Please try again.');
-    }
+    // Add to loan store (async function)
+    addLoanApplication(loanApplicationData)
+      .then((newLoan) => {
+        console.log('Loan Application Submitted:', newLoan);
+        toast.success(`Loan application submitted successfully! Loan ID: ${newLoan.loanId || newLoan._id}`);
+        
+        // Reset form
+        resetForm();
+        
+        // Redirect to My Loans page after 1.5 seconds
+        setTimeout(() => {
+          navigate('/shopkeeper/my-loans');
+        }, 1500);
+      })
+      .catch((error) => {
+        console.error('Error submitting loan application:', error);
+        toast.error(error.response?.data?.message || 'Failed to submit loan application. Please try again.');
+      });
   };
 
   const formatSummaryValue = (value) => {
@@ -828,8 +895,8 @@ export default function ApplyLoan() {
               <FormInput name="mobile" label="Mobile Number *" type="tel" register={register} errors={errors} icon={Phone} maxLength={10} placeholder="10-digit number" isMissing={missingFields.includes('mobile')} />
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('gender') ? 'text-red-600' : 'text-gray-700'}`}>Gender *</label>
-                <div className="flex space-x-6 mt-3">
-                  {['male', 'female', 'other'].map(g => <label key={g} className="inline-flex items-center cursor-pointer group"><input type="radio" value={g} {...register('gender')} className="h-5 w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2.5 capitalize font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{g}</span></label>)}
+                <div className="flex flex-wrap gap-3 md:gap-6 mt-3">
+                  {['male', 'female', 'other'].map(g => <label key={g} className="inline-flex items-center cursor-pointer group"><input type="radio" value={g} {...register('gender')} className="h-4 w-4 md:h-5 md:w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2 md:ml-2.5 capitalize font-medium text-sm md:text-base text-gray-700 group-hover:text-blue-600 transition-colors">{g}</span></label>)}
                 </div>
                 {errors.gender && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.gender.message}</p>}
                 {missingFields.includes('gender') && !errors.gender && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
@@ -863,8 +930,8 @@ export default function ApplyLoan() {
               <FormInput name="ifscCode" label={`IFSC Code ${!isCashMode ? '*' : ''}`} register={register} errors={errors} icon={Hash} maxLength={11} className="uppercase" isMissing={missingFields.includes('ifscCode')} />
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('paymentMode') ? 'text-red-600' : 'text-gray-700'}`}>Payment Mode *</label>
-                <div className="flex space-x-6 mt-3">
-                  {['auto_debit', 'manual', 'cash'].map(m => <label key={m} className="inline-flex items-center cursor-pointer group"><input type="radio" value={m} {...register('paymentMode')} className="h-5 w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2.5 capitalize font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{m.replace('_', ' ')}</span></label>)}
+                <div className="flex flex-wrap gap-3 md:gap-6 mt-3">
+                  {['auto_debit', 'manual', 'cash'].map(m => <label key={m} className="inline-flex items-center cursor-pointer group"><input type="radio" value={m} {...register('paymentMode')} className="h-4 w-4 md:h-5 md:w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2 md:ml-2.5 capitalize font-medium text-sm md:text-base text-gray-700 group-hover:text-blue-600 transition-colors">{m.replace('_', ' ')}</span></label>)}
                 </div>
                 {errors.paymentMode && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.paymentMode.message}</p>}
                 {missingFields.includes('paymentMode') && !errors.paymentMode && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
@@ -1359,38 +1426,38 @@ export default function ApplyLoan() {
 
   // PAGE 1: Aadhar Status Check
   const renderAadharPage = () => (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Check Loan Status</h1>
-          <p className="text-gray-600 mt-2">Enter your Aadhar number to check existing loans</p>
+        <div className="text-center mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Check Loan Status</h1>
+          <p className="text-sm md:text-base text-gray-600 mt-2">Enter your Aadhar number to check existing loans</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-8 space-y-6">
+        <div className="bg-white rounded-xl shadow-lg p-4 md:p-8 space-y-4 md:space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">Aadhar Number</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2 md:mb-3">Aadhar Number</label>
             <input
               type="text"
               maxLength={12}
               value={aadhaarInput}
               onChange={(e) => setAadhaarInput(e.target.value)}
               placeholder="Enter 12-digit Aadhar Number"
-              className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full rounded-lg border-2 border-gray-300 px-3 md:px-4 py-2.5 md:py-3 text-base md:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <button
               type="button"
               onClick={handleCheckAadhaar}
-              className="flex-1 px-6 py-3 rounded-lg text-white font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-md transition transform hover:scale-105"
+              className="flex-1 px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base rounded-lg text-white font-semibold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-md transition transform hover:scale-105"
             >
               Check Status
             </button>
             <button
               type="button"
               onClick={handleSkipAadhaarCheck}
-              className="flex-1 px-6 py-3 rounded-lg text-gray-700 font-semibold border-2 border-gray-300 bg-white hover:bg-gray-50 transition"
+              className="flex-1 px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base rounded-lg text-gray-700 font-semibold border-2 border-gray-300 bg-white hover:bg-gray-50 transition"
             >
               Add Customer
             </button>
@@ -1407,15 +1474,15 @@ export default function ApplyLoan() {
           </div> */}
 
           {aadhaarSearched && (
-            <div className="border-t-2 pt-6 mt-6 space-y-4">
+            <div className="border-t-2 pt-4 md:pt-6 mt-4 md:mt-6 space-y-3 md:space-y-4">
               {aadhaarMatches.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-gray-600 text-lg">✓ No existing loans found for this Aadhar number</p>
-                  <p className="text-gray-500 text-sm mt-2">You can proceed with a new loan application</p>
+                <div className="text-center py-4 md:py-6">
+                  <p className="text-gray-600 text-base md:text-lg">✓ No existing loans found for this Aadhar number</p>
+                  <p className="text-gray-500 text-xs md:text-sm mt-2">You can proceed with a new loan application</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <p className="font-semibold text-gray-800 text-lg">Found {aadhaarMatches.length} loan(s):</p>
+                <div className="space-y-3 md:space-y-4">
+                  <p className="font-semibold text-gray-800 text-base md:text-lg">Found {aadhaarMatches.length} loan(s):</p>
                   {aadhaarMatches.map((loan) => {
                     const paymentsCount = (loan.payments?.length || loan.emisPaid || 0);
                     const tenure = loan.tenure || (loan.emisPaid || 0) + (loan.emisRemaining || 0) || paymentsCount;
@@ -1431,15 +1498,15 @@ export default function ApplyLoan() {
                     return (
                       <div
                         key={loan.id}
-                        className="rounded-lg border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 space-y-3"
+                        className="rounded-lg border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-3 md:p-4 space-y-2 md:space-y-3"
                       >
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                           <div>
-                            <p className="font-bold text-gray-900 text-lg">Loan ID: {loan.loanId}</p>
-                            <p className="text-gray-600 mt-1">Amount: <span className="font-semibold">₹{(loan.loanAmount || 0).toLocaleString()}</span></p>
+                            <p className="font-bold text-gray-900 text-sm md:text-lg">Loan ID: {loan.loanId}</p>
+                            <p className="text-gray-600 text-xs md:text-base mt-1">Amount: <span className="font-semibold">₹{(loan.loanAmount || 0).toLocaleString()}</span></p>
                           </div>
-                          <div className="flex flex-col gap-2 items-end">
-                            <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white ${isCompleted ? 'bg-green-600' : isOverdue ? 'bg-red-600' : 'bg-blue-600'}`}>
+                          <div className="flex flex-row sm:flex-col gap-2 items-start sm:items-end">
+                            <span className={`px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold text-white ${isCompleted ? 'bg-green-600' : isOverdue ? 'bg-red-600' : 'bg-blue-600'}`}>
                               {isCompleted ? 'Completed' : isOverdue ? 'Overdue' : loan.status || 'Active'}
                             </span>
                             {isHistoryOpen && (
@@ -1449,7 +1516,7 @@ export default function ApplyLoan() {
                             )}
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
                           <div>
                             <p className="text-gray-600">Total EMIs</p>
                             <p className="font-semibold text-gray-900">{tenure}</p>
@@ -1483,30 +1550,30 @@ export default function ApplyLoan() {
 
   // PAGE 2: Mode Selection
   const renderModePage = () => (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={() => setStage('aadhar')}
-          className="mb-6 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition"
+          className="mb-4 md:mb-6 inline-flex items-center px-3 md:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </button>
 
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900">Select Loan Type</h1>
-          <p className="text-gray-600 mt-2">Choose how you want to apply for a loan</p>
+        <div className="text-center mb-8 md:mb-12">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Select Loan Type</h1>
+          <p className="text-sm md:text-base text-gray-600 mt-2">Choose how you want to apply for a loan</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           <button
             onClick={() => handleModeSelection('max_born_group')}
-            className="w-full p-8 rounded-xl border-2 border-gray-200 bg-white hover:border-green-500 hover:bg-green-50 transition shadow-md hover:shadow-lg"
+            className="w-full p-4 md:p-8 rounded-xl border-2 border-gray-200 bg-white hover:border-green-500 hover:bg-green-50 transition shadow-md hover:shadow-lg"
           >
             <div className="text-left">
-              <h2 className="text-2xl font-bold text-gray-900">Max Born Group</h2>
-              <p className="text-gray-600 mt-2">Apply with guarantor and complete documentation</p>
-              <div className="mt-4 space-y-1 text-sm text-gray-700">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Max Born Group</h2>
+              <p className="text-sm md:text-base text-gray-600 mt-1 md:mt-2">Apply with guarantor and complete documentation</p>
+              <div className="mt-3 md:mt-4 space-y-1 text-xs md:text-sm text-gray-700">
                 <p>✓ Requires guarantor details</p>
                 <p>✓ All fields mandatory</p>
                 <p>✓ Higher loan amount eligible</p>
@@ -1516,12 +1583,12 @@ export default function ApplyLoan() {
 
           <button
             onClick={() => handleModeSelection('self')}
-            className="w-full p-8 rounded-xl border-2 border-gray-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition shadow-md hover:shadow-lg"
+            className="w-full p-4 md:p-8 rounded-xl border-2 border-gray-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition shadow-md hover:shadow-lg"
           >
             <div className="text-left">
-              <h2 className="text-2xl font-bold text-gray-900">Self Loan</h2>
-              <p className="text-gray-600 mt-2">Quick application with minimal requirements</p>
-              <div className="mt-4 space-y-1 text-sm text-gray-700">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Self Loan</h2>
+              <p className="text-sm md:text-base text-gray-600 mt-1 md:mt-2">Quick application with minimal requirements</p>
+              <div className="mt-3 md:mt-4 space-y-1 text-xs md:text-sm text-gray-700">
                 <p>✓ Only Aadhar number required</p>
                 <p>✓ Most fields optional</p>
                 <p>✓ Fast approval process</p>
@@ -1545,32 +1612,34 @@ export default function ApplyLoan() {
           Back
         </button>
         
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">New Loan Application</h1>
-            <p className="text-gray-600 text-sm">Complete the form to apply for a loan</p>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-1 md:mb-2 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">New Loan Application</h1>
+            <p className="text-gray-600 text-xs md:text-sm">Complete the form to apply for a loan</p>
           </div>
-          <div className={`px-5 py-2.5 rounded-full font-bold text-white text-sm shadow-lg bg-gradient-to-r from-green-600 to-emerald-600`}>
+          <div className={`px-3 md:px-5 py-2 md:py-2.5 rounded-full font-bold text-white text-xs md:text-sm shadow-lg bg-gradient-to-r from-green-600 to-emerald-600 whitespace-nowrap`}>
             {applicationMode === 'self' ? '🔵 Self Loan' : '🟢 Max Born Group'}
           </div>
         </div>
         
         {/* Stepper */}
-        <div className="flex items-center mb-10 mt-6 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          {steps.map((item, index) => (
-            <React.Fragment key={index}>
-              <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-md ${step >= index ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white scale-110' : 'bg-gray-100 text-gray-400'}`}>
-                  {index + 1}
+        <div className="overflow-x-auto mb-6 md:mb-10 mt-4 md:mt-6">
+          <div className="flex items-center min-w-max bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100">
+            {steps.map((item, index) => (
+              <React.Fragment key={index}>
+                <div className="flex flex-col items-center">
+                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-xs md:text-sm font-bold transition-all duration-300 shadow-md ${step >= index ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white scale-110' : 'bg-gray-100 text-gray-400'}`}>
+                    {index + 1}
+                  </div>
+                  <p className={`text-[10px] md:text-xs mt-1 md:mt-2 text-center font-medium transition-all duration-200 whitespace-nowrap ${step >= index ? 'text-blue-600' : 'text-gray-400'}`}>{item.name}</p>
                 </div>
-                <p className={`text-xs mt-2 text-center font-medium transition-all duration-200 ${step >= index ? 'text-blue-600' : 'text-gray-400'}`}>{item.name}</p>
-              </div>
-              {index < steps.length - 1 && <div className={`flex-1 h-1.5 mx-3 rounded-full transition-all duration-300 ${step > index ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-gray-200'}`}></div>}
-            </React.Fragment>
-          ))}
+                {index < steps.length - 1 && <div className={`flex-1 h-1 md:h-1.5 mx-2 md:mx-3 rounded-full transition-all duration-300 min-w-[20px] md:min-w-[40px] ${step > index ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-gray-200'}`}></div>}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+        <div className="bg-white shadow-xl rounded-2xl p-4 md:p-8 border border-gray-100">
           <form onSubmit={handleSubmit(onSubmit)}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -1580,19 +1649,19 @@ export default function ApplyLoan() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <h2 className="text-2xl font-bold mb-8 text-gray-900 pb-3 border-b-2 border-gray-100">{steps[step].name}</h2>
+                <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-8 text-gray-900 pb-2 md:pb-3 border-b-2 border-gray-100">{steps[step].name}</h2>
                 {renderStepContent()}
               </motion.div>
             </AnimatePresence>
 
-            <div className="mt-10 flex justify-between gap-4">
+            <div className="mt-6 md:mt-10 flex flex-col sm:flex-row justify-between gap-3 md:gap-4">
               <button
                 type="button"
                 onClick={prevStep}
                 disabled={step === 0}
-                className="inline-flex items-center px-8 py-3 border-2 border-gray-300 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                className="inline-flex items-center justify-center px-4 md:px-8 py-2.5 md:py-3 border-2 border-gray-300 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
               >
-                <ArrowLeft className="h-5 w-5 mr-2" />
+                <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                 Previous
               </button>
 
@@ -1600,19 +1669,19 @@ export default function ApplyLoan() {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="inline-flex items-center px-8 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105"
+                  className="inline-flex items-center justify-center px-4 md:px-8 py-2.5 md:py-3 border border-transparent text-sm font-semibold rounded-lg shadow-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105"
                 >
                   Next
-                  <ArrowRight className="h-5 w-5 ml-2" />
+                  <ArrowRight className="h-4 w-4 md:h-5 md:w-5 ml-2" />
                 </button>
               ) : step === steps.length - 1 ? (
-                <div className="flex gap-3 no-print">
+                <div className="flex flex-col sm:flex-row gap-2 md:gap-3 no-print">
                   <button
                     type="button"
                     onClick={handlePrint}
-                    className="inline-flex items-center px-6 py-3 border-2 border-blue-600 text-sm font-semibold rounded-lg shadow-md text-blue-600 bg-white hover:bg-blue-50 transition-all duration-200"
+                    className="inline-flex items-center justify-center px-4 md:px-6 py-2.5 md:py-3 border-2 border-blue-600 text-sm font-semibold rounded-lg shadow-md text-blue-600 bg-white hover:bg-blue-50 transition-all duration-200"
                   >
-                    <Printer className="h-5 w-5 mr-2" />
+                    <Printer className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                     Print
                   </button>
                   <button
@@ -1621,9 +1690,9 @@ export default function ApplyLoan() {
                       console.log('Submit button clicked on step:', step);
                       onSubmit(watch());
                     }}
-                    className="inline-flex items-center px-10 py-3 border border-transparent text-base font-bold rounded-lg shadow-xl text-white bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105"
+                    className="inline-flex items-center justify-center px-6 md:px-10 py-2.5 md:py-3 border border-transparent text-sm md:text-base font-bold rounded-lg shadow-xl text-white bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105"
                   >
-                    ✓ Confirm & Submit Application
+                    ✓ Confirm & Submit
                   </button>
                 </div>
               ) : null}

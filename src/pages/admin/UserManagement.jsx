@@ -174,8 +174,8 @@ export default function UserManagement() {
             setIsModalOpen(true)
           }}
         >
-          <Plus className="h-4 w-4 mr-2" />
-          Add User
+          <Plus className="h-4 w-5 mr-2" />
+          Add
         </Button>
       </div>
 

@@ -470,8 +470,8 @@ export default function ShopkeeperManagement() {
             setIsModalOpen(true)
           }}
         >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Shopkeeper
+          <Plus className="h-4 w-5 mr-2" />
+          Add
         </Button>
       </div>
 

@@ -104,23 +104,25 @@ const loanStore = create(
           // Update in backend first
           const updatedLoan = await loanService.updateLoanStatus(loanId, newStatus, comment);
           
-          // Update local store
+          // Update local store with proper categorization
           set((state) => {
             const updatedLoans = state.loans.map(l => 
               (l.id === loanId || l._id === loanId) ? updatedLoan : l
             );
             
+            // Remove from all categories first
+            const filteredPending = state.pendingLoans.filter(l => l.id !== loanId && l._id !== loanId);
+            const filteredVerified = state.verifiedLoans.filter(l => l.id !== loanId && l._id !== loanId);
+            const filteredApproved = state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId);
+            
+            // Add to appropriate category based on new status
             return {
               loans: updatedLoans,
-              pendingLoans: state.pendingLoans.map(l => 
-                (l.id === loanId || l._id === loanId) ? updatedLoan : l
-              ),
-              verifiedLoans: newStatus === 'Verified' 
-                ? [...state.verifiedLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan]
-                : state.verifiedLoans.map(l => (l.id === loanId || l._id === loanId) ? updatedLoan : l),
-              approvedLoans: newStatus === 'Approved'
-                ? [...state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan]
-                : state.approvedLoans.map(l => (l.id === loanId || l._id === loanId) ? updatedLoan : l),
+              pendingLoans: newStatus === 'Pending' ? [...filteredPending, updatedLoan] : filteredPending,
+              verifiedLoans: newStatus === 'Verified' ? [...filteredVerified, updatedLoan] : filteredVerified,
+              approvedLoans: newStatus === 'Approved' ? [...filteredApproved, updatedLoan] : filteredApproved,
+              activeLoans: newStatus === 'Active' ? [...state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan] : state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId),
+              completedLoans: (newStatus === 'Paid' || newStatus === 'Completed') ? [...state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan] : state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId),
             };
           });
 
@@ -143,40 +145,55 @@ const loanStore = create(
       },
 
       // Move verified loan to approved (final admin approval)
-      approveLoan: (loanId) => {
-        const loan = get().loans.find(l => l.id === loanId);
-        if (!loan) return false;
+      approveLoan: async (loanId) => {
+        try {
+          const loan = get().loans.find(l => l.id === loanId || l._id === loanId);
+          if (!loan) return false;
 
-        const updatedLoan = {
-          ...loan,
-          status: 'Approved',
-          approvedDate: new Date().toISOString().split('T')[0],
-          updatedAt: new Date().toISOString(),
-        };
+          // Call backend API to update status to Approved
+          await loanService.updateLoanStatus(loanId, 'Approved', 'Approved by admin');
 
-        set((state) => ({
-          loans: state.loans.map(l => l.id === loanId ? updatedLoan : l),
-          // Remove from pending loans when approved but keep in verifiedLoans
-          pendingLoans: state.pendingLoans.filter(l => l.id !== loanId),
-          verifiedLoans: state.verifiedLoans.map(l => l.id === loanId ? updatedLoan : l),
-          approvedLoans: [...state.approvedLoans.filter(l => l.id !== loanId), updatedLoan],
-        }));
+          // Fetch updated loans from backend to ensure sync
+          await get().fetchLoans();
 
-        // Add notification for loan approval
-        notificationStore.getState().addNotification({
-          type: 'success',
-          title: 'Loan Approved',
-          message: `Loan for ${loan.customerName} (ID: ${loanId}) has been approved`,
-          severity: 'medium',
-          loanId: loanId,
-          clientId: loan.customerId,
-        });
+          // Add notification for loan approval
+          notificationStore.getState().addNotification({
+            type: 'success',
+            title: 'Loan Approved',
+            message: `Loan for ${loan.customerName || loan.clientName} (ID: ${loanId}) has been approved`,
+            severity: 'medium',
+            loanId: loanId,
+            clientId: loan.customerId,
+          });
 
-        return true;
+          return true;
+        } catch (error) {
+          console.error('Failed to approve loan:', error);
+          throw error;
+        }
       },
 
       // Reject loan
-      rejectLoan: (loanId, reason = '') => {
+      rejectLoan: async (loanId, reason = '') => {
+        try {
+          const loan = get().loans.find(l => l.id === loanId || l._id === loanId);
+          if (!loan) return false;
+
+          // Call backend API to update status to Rejected
+          await loanService.updateLoanStatus(loanId, 'Rejected', reason);
+
+          // Fetch updated loans from backend to ensure sync
+          await get().fetchLoans();
+
+          return true;
+        } catch (error) {
+          console.error('Failed to reject loan:', error);
+          throw error;
+        }
+      },
+
+      // Old rejectLoan implementation (keeping for reference, can be removed)
+      rejectLoanOld: (loanId, reason = '') => {
         const loan = get().loans.find(l => l.id === loanId);
         if (!loan) return false;
 
@@ -237,19 +254,27 @@ const loanStore = create(
 
           console.log('Updated loan in store:', updatedLoan);
           console.log('Payments array:', updatedLoan.payments);
+          console.log('EMIs Paid:', updatedLoan.emisPaid);
+          console.log('EMIs Remaining:', updatedLoan.emisRemaining);
 
           // Record payment for EMI Management synchronization
+          // EMI number should be the current paid count (emisPaid already incremented by backend)
+          const currentEmiNumber = updatedLoan.emisPaid || 1;
+          
           get().recordPayment({
             id: `PAY${Date.now()}`,
-            loanId: loanId,
+            loanId: updatedLoan.id || updatedLoan._id,
             amount: paymentData.amount,
             paymentMode: paymentData.paymentMode,
             date: paymentData.paymentDate,
             collectedBy: paymentData.collectedBy || 'collections',
             transactionId: paymentData.transactionId || '',
-            emiNumber: (updatedLoan.emisPaid || 0),
+            emiNumber: currentEmiNumber,
             createdAt: new Date().toISOString(),
           });
+
+          // Fetch fresh data from backend to ensure sync
+          await get().fetchLoans();
 
           return true;
         } catch (error) {
@@ -330,20 +355,29 @@ const loanStore = create(
       },
 
       // Delete loan
-      deleteLoan: (loanId) => {
-        const loan = get().loans.find(l => l.id === loanId || l._id === loanId);
-        if (!loan) return false;
+      deleteLoan: async (loanId) => {
+        try {
+          const loan = get().loans.find(l => l.id === loanId || l._id === loanId);
+          if (!loan) return false;
 
-        set((state) => ({
-          loans: state.loans.filter(l => l.id !== loanId && l._id !== loanId),
-          pendingLoans: state.pendingLoans.filter(l => l.id !== loanId && l._id !== loanId),
-          verifiedLoans: state.verifiedLoans.filter(l => l.id !== loanId && l._id !== loanId),
-          approvedLoans: state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId),
-          activeLoans: state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId),
-          completedLoans: state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId),
-        }));
+          // Delete from backend first
+          await loanService.deleteLoan(loanId);
 
-        return true;
+          // Then update local store
+          set((state) => ({
+            loans: state.loans.filter(l => l.id !== loanId && l._id !== loanId),
+            pendingLoans: state.pendingLoans.filter(l => l.id !== loanId && l._id !== loanId),
+            verifiedLoans: state.verifiedLoans.filter(l => l.id !== loanId && l._id !== loanId),
+            approvedLoans: state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId),
+            activeLoans: state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId),
+            completedLoans: state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId),
+          }));
+
+          return true;
+        } catch (error) {
+          console.error('Failed to delete loan:', error);
+          throw error;
+        }
       },
 
       // Update customer KYC status

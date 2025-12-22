@@ -60,7 +60,7 @@ const calculateEMIDueDate = (baseDateStr, emiNumber) => {
 
 export default function LoanTracking() {
   // Get all loans from store
-  const { loans: allLoans = [], deleteLoan } = loanStore();
+  const { loans: allLoans = [], deleteLoan, fetchLoans } = loanStore();
   const navigate = useNavigate();
   const [loans, setLoans] = useState([]);
   const [filteredLoans, setFilteredLoans] = useState([]);
@@ -68,6 +68,16 @@ export default function LoanTracking() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Auto-refresh loans every 10 seconds to get latest status updates
+  useEffect(() => {
+    fetchLoans(); // Initial fetch
+    const interval = setInterval(() => {
+      fetchLoans(); // Auto-refresh every 10 seconds
+    }, 10000);
+    
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, [fetchLoans]);
 
   // Sync with store data
   useEffect(() => {
@@ -105,12 +115,13 @@ export default function LoanTracking() {
     }
   }, [searchTerm, loans]);
 
-  const handleDeleteLoan = (loanId) => {
+  const handleDeleteLoan = async (loanId) => {
     if (window.confirm('Are you sure you want to delete this loan application?')) {
-      const success = deleteLoan(loanId);
-      if (success) {
+      try {
+        await deleteLoan(loanId);
         toast.success('Loan application deleted successfully!');
-      } else {
+      } catch (error) {
+        console.error('Delete error:', error);
         toast.error('Failed to delete loan application');
       }
     }
@@ -158,7 +169,8 @@ export default function LoanTracking() {
 
   const handlePayNow = (loan) => {
     if (!loan) return;
-    navigate('/shopkeeper/collect-payment', { state: { loanId: loan.id } });
+    const loanId = loan._id || loan.id;
+    navigate('/shopkeeper/collect-payment', { state: { loanId, loan } });
   };
 
   const handlePrintLoanDetails = () => {

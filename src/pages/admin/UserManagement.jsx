@@ -16,7 +16,7 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, reset, setValue } = useForm()
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm()
 
   useEffect(() => {
     fetchUsers()
@@ -215,7 +215,23 @@ export default function UserManagement() {
           </div>
           <div>
             <label className="text-sm font-medium">Phone Number</label>
-            <Input {...register('phoneNumber', { required: true })} placeholder="Enter phone number" />
+            <Input 
+              {...register('phoneNumber', { 
+                required: 'Phone number is required',
+                pattern: {
+                  value: /^[0-9]{10}$/,
+                  message: 'Phone number must be exactly 10 digits'
+                },
+                maxLength: {
+                  value: 10,
+                  message: 'Phone number must be 10 digits'
+                }
+              })} 
+              placeholder="Enter 10 digit phone number"
+              maxLength={10}
+              type="tel"
+            />
+            {errors.phoneNumber && <p className="text-xs text-red-500 mt-1">{errors.phoneNumber.message}</p>}
           </div>
           <div>
             <label className="text-sm font-medium">Password {editingUser && '(Leave blank to keep current)'}</label>

@@ -458,6 +458,7 @@ export default function ApplyLoan() {
   const [resetKey, setResetKey] = useState(0);
   const [missingFields, setMissingFields] = useState([]);
   const [isEditMode, setIsEditMode] = useState(!!editLoan);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { addLoanApplication, loans, updateLoan } = loanStore();
 
@@ -763,7 +764,36 @@ export default function ApplyLoan() {
     window.print();
   };
 
-  const onSubmit = (data) => {
+  // Helper function to convert File to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        resolve(null);
+        return;
+      }
+      
+      // If it's already a string (base64), return it
+      if (typeof file === 'string') {
+        resolve(file);
+        return;
+      }
+      
+      // If it's a FileList, get the first file
+      const fileObj = file instanceof FileList ? file[0] : file;
+      
+      if (!fileObj || !(fileObj instanceof File)) {
+        resolve(null);
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(fileObj);
+    });
+  };
+
+  const onSubmit = async (data) => {
     console.log('Submit called on step:', step);
     console.log('Form data:', data);
     
@@ -775,8 +805,62 @@ export default function ApplyLoan() {
     
     console.log('Validation passed, proceeding with submission');
     
+    // Set submitting state to true
+    setIsSubmitting(true);
+    
     // Combine all form data from all steps
     const completeFormData = { ...allFormData, ...data };
+    
+    // Validate that client and guarantor mobile numbers are different
+    const clientMobile = completeFormData.mobile;
+    const guarantorMobile = completeFormData.guarantorMobile || allFormData.guarantorMobile;
+    
+    if (clientMobile && guarantorMobile && clientMobile === guarantorMobile) {
+      toast.error('Client aur Guarantor ka mobile number same nahi ho sakta!');
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Convert all images to base64
+    try {
+      toast.info('Images upload ho rahi hain, please wait...');
+      
+      const [
+        clientPhoto,
+        clientAadharFront,
+        clientAadharBack,
+        clientPanFront,
+        guarantorPhoto,
+        guarantorAadharFront,
+        guarantorAadharBack,
+        guarantorPanFront,
+      ] = await Promise.all([
+        fileToBase64(completeFormData.photo),
+        fileToBase64(completeFormData.aadharFront),
+        fileToBase64(completeFormData.aadharBack),
+        fileToBase64(completeFormData.panFront),
+        fileToBase64(completeFormData.guarantorPhoto),
+        fileToBase64(completeFormData.guarantorAadharFront),
+        fileToBase64(completeFormData.guarantorAadharBack),
+        fileToBase64(completeFormData.guarantorPanFront),
+      ]);
+      
+      // Update form data with base64 images
+      completeFormData.photo = clientPhoto;
+      completeFormData.aadharFront = clientAadharFront;
+      completeFormData.aadharBack = clientAadharBack;
+      completeFormData.panFront = clientPanFront;
+      completeFormData.guarantorPhoto = guarantorPhoto;
+      completeFormData.guarantorAadharFront = guarantorAadharFront;
+      completeFormData.guarantorAadharBack = guarantorAadharBack;
+      completeFormData.guarantorPanFront = guarantorPanFront;
+      
+    } catch (error) {
+      console.error('Error converting images:', error);
+      toast.error('Images convert karne me error aaya. Please try again.');
+      setIsSubmitting(false);
+      return;
+    }
     
     // Structure the loan application data
     const loanApplicationData = {
@@ -798,6 +882,12 @@ export default function ApplyLoan() {
       clientAadharNumber: completeFormData.aadharNumber,
       clientPanNumber: completeFormData.panNumber,
       
+      // Client Images (base64)
+      clientPhoto: completeFormData.photo,
+      clientAadharFront: completeFormData.aadharFront,
+      clientAadharBack: completeFormData.aadharBack,
+      clientPanFront: completeFormData.panFront,
+      
       // Guarantor Details - Get from step 1 form data
       guarantor: {
         name: completeFormData.guarantorFullName || allFormData.guarantorFullName || 'Guarantor Name',
@@ -816,7 +906,11 @@ export default function ApplyLoan() {
         },
         aadharNumber: completeFormData.guarantorAadharNumber || allFormData.guarantorAadharNumber || '123456789012',
         referenceName: completeFormData.referenceName || allFormData.referenceName || '',
-        referenceNumber: completeFormData.referenceNumber || allFormData.referenceNumber || '',
+        referenceMobileNumber: completeFormData.referenceNumber || allFormData.referenceNumber || '',
+        photo: completeFormData.guarantorPhoto || allFormData.guarantorPhoto,
+        aadharFront: completeFormData.guarantorAadharFront || allFormData.guarantorAadharFront,
+        aadharBack: completeFormData.guarantorAadharBack || allFormData.guarantorAadharBack,
+        panFront: completeFormData.guarantorPanFront || allFormData.guarantorPanFront,
       },
       
       // Product Details
@@ -852,8 +946,9 @@ export default function ApplyLoan() {
         console.log('Loan Application Submitted:', newLoan);
         toast.success(`Loan application submitted successfully! Loan ID: ${newLoan.loanId || newLoan._id}`);
         
-        // Reset form
+        // Reset form and submitting state
         resetForm();
+        setIsSubmitting(false);
         
         // Redirect to My Loans page after 1.5 seconds
         setTimeout(() => {
@@ -863,6 +958,7 @@ export default function ApplyLoan() {
       .catch((error) => {
         console.error('Error submitting loan application:', error);
         toast.error(error.response?.data?.message || 'Failed to submit loan application. Please try again.');
+        setIsSubmitting(false);
       });
   };
 
@@ -926,7 +1022,7 @@ export default function ApplyLoan() {
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormInput name="bankName" label={`Bank Name ${!isCashMode ? '*' : ''}`} register={register} errors={errors} icon={Building} isMissing={missingFields.includes('bankName')} />
-              <FormInput name="accountNumber" label={`Account Number ${!isCashMode ? '*' : ''}`} register={register} errors={errors} icon={Hash} isMissing={missingFields.includes('accountNumber')} />
+              <FormInput name="accountNumber" label={`Account Number ${!isCashMode ? '*' : ''}`} register={register} errors={errors} icon={Hash} maxLength={18} type="text" isMissing={missingFields.includes('accountNumber')} />
               <FormInput name="ifscCode" label={`IFSC Code ${!isCashMode ? '*' : ''}`} register={register} errors={errors} icon={Hash} maxLength={11} className="uppercase" isMissing={missingFields.includes('ifscCode')} />
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('paymentMode') ? 'text-red-600' : 'text-gray-700'}`}>Payment Mode *</label>
@@ -1690,9 +1786,24 @@ export default function ApplyLoan() {
                       console.log('Submit button clicked on step:', step);
                       onSubmit(watch());
                     }}
-                    className="inline-flex items-center justify-center px-6 md:px-10 py-2.5 md:py-3 border border-transparent text-sm md:text-base font-bold rounded-lg shadow-xl text-white bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105"
+                    disabled={isSubmitting}
+                    className={`inline-flex items-center justify-center px-6 md:px-10 py-2.5 md:py-3 border border-transparent text-sm md:text-base font-bold rounded-lg shadow-xl text-white transition-all duration-200 ${
+                      isSubmitting 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 transform hover:scale-105'
+                    }`}
                   >
-                    ✓ Confirm & Submit
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Submitting...
+                      </>
+                    ) : (
+                      '✓ Confirm & Submit'
+                    )}
                   </button>
                 </div>
               ) : null}

@@ -20,10 +20,10 @@ const months = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-// Safe property accessor helper
+// Safe property accessor helper - returns null for empty strings too
 const safeGet = (obj, ...keys) => {
   for (const key of keys) {
-    if (obj && obj[key] !== undefined && obj[key] !== null) {
+    if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
       return obj[key];
     }
   }
@@ -132,7 +132,7 @@ export default function LoanVerifier() {
     setLoans(pendingLoans);
   };
 
-  const updateLoanStatus = (id, newStatus, rejectionComment = '') => {
+  const updateLoanStatus = async (id, newStatus, rejectionComment = '') => {
     // For Verified status, check if all checkboxes are ticked
     if (newStatus === 'Verified') {
       const allChecked = Object.values(verificationChecks).every(checked => checked === true);
@@ -142,13 +142,12 @@ export default function LoanVerifier() {
       }
     }
     
-    // Update in store
-    const success = updateLoanStatusInStore(id, newStatus, 'verifier', rejectionComment);
-    
-    if (success) {
-      // If there's a comment, you can store it in the loan object
+    try {
+      // Update in store (async function)
+      await updateLoanStatusInStore(id, newStatus, 'verifier', rejectionComment);
+      
+      // If there's a comment, log it
       if (rejectionComment) {
-        // You can add this to your loan store if needed
         console.log(`${newStatus} reason:`, rejectionComment);
       }
       
@@ -171,7 +170,8 @@ export default function LoanVerifier() {
         guarantorWorkingAddress: false,
         guarantorPermanentAddress: false
       });
-    } else {
+    } catch (error) {
+      console.error('Failed to update loan status:', error);
       toast.error('Failed to update loan status');
     }
   };
@@ -201,12 +201,13 @@ export default function LoanVerifier() {
     }));
   };
 
-  const deleteLoan = (id) => {
+  const deleteLoan = async (id) => {
     if (window.confirm('Are you sure you want to delete this loan application?')) {
-      const success = deleteLoanFromStore(id);
-      if (success) {
+      try {
+        await deleteLoanFromStore(id);
         toast.success('Loan application deleted successfully!');
-      } else {
+      } catch (error) {
+        console.error('Delete error:', error);
         toast.error('Failed to delete loan application');
       }
     }

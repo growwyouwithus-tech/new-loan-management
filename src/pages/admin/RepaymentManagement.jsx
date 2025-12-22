@@ -48,17 +48,24 @@ export default function RepaymentManagement() {
       const schedule = []
       const baseDateStr = loan.approvedDate || loan.appliedDate
       
+      // Get emisPaid from loan object (backend tracks this)
+      const emisPaidCount = loan.emisPaid || 0;
+      
+      console.log(`Loan ${loan.loanId}: emisPaid=${emisPaidCount}, tenure=${loan.tenure}, payments array length=${loan.payments?.length || 0}`);
+      
       for (let i = 0; i < (loan.tenure || 0); i++) {
         const emiNumber = i + 1
         const dueDateStr = calculateEMIDueDate(baseDateStr, emiNumber)
         const dueDate = new Date(dueDateStr)
         
-        // Check if this EMI is paid by looking at payments
-        const emiPayment = allPayments.find(payment => 
-          payment.loanId === loan.id && payment.emiNumber === emiNumber
-        )
+        // Check if this EMI is paid based on emisPaid count from backend
+        // If emiNumber <= emisPaid, then this EMI is paid
+        const isPaid = emiNumber <= emisPaidCount
         
-        const isPaid = emiPayment !== undefined
+        // Also check loan.payments array as backup
+        const paymentFromArray = loan.payments?.[i];
+        
+        console.log(`Loan ${loan.loanId} EMI ${emiNumber}: isPaid=${isPaid} (emisPaid=${emisPaidCount}), hasPaymentInArray=${!!paymentFromArray}`)
         const isOverdue = new Date() > dueDate && !isPaid
         
         schedule.push({
@@ -74,7 +81,7 @@ export default function RepaymentManagement() {
           emiNumber: emiNumber,
           status: isPaid ? 'paid' : isOverdue ? 'overdue' : 'pending',
           loan: loan,
-          paymentDetails: emiPayment || null,
+          paymentDetails: paymentFromArray || null,
           appliedDate: loan.appliedDate || 'N/A', // Add loan application date
         })
       }
@@ -126,22 +133,20 @@ export default function RepaymentManagement() {
       
       // Force refresh of repayments to update status
       setTimeout(() => {
-        const updatedPayments = getPayments()
         const repaymentSchedule = activeLoans.flatMap(loan => {
           const schedule = []
           const baseDateStr = loan.approvedDate || loan.appliedDate
+          
+          // Get emisPaid from loan object (backend tracks this)
+          const emisPaidCount = loan.emisPaid || 0;
           
           for (let i = 0; i < (loan.tenure || 0); i++) {
             const emiNumber = i + 1
             const dueDateStr = calculateEMIDueDate(baseDateStr, emiNumber)
             const dueDate = new Date(dueDateStr)
             
-            // Check if this EMI is paid by looking at payments
-            const emiPayment = updatedPayments.find(payment => 
-              payment.loanId === loan.id && payment.emiNumber === emiNumber
-            )
-            
-            const isPaid = emiPayment !== undefined
+            // Check if this EMI is paid based on emisPaid count from backend
+            const isPaid = emiNumber <= emisPaidCount
             const isOverdue = new Date() > dueDate && !isPaid
             
             schedule.push({

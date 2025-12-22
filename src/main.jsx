@@ -7,6 +7,13 @@ import App from './App.jsx'
 import './styles/index.css'
 import 'react-toastify/dist/ReactToastify.css'
 
+// Prevent scroll wheel from changing number input values globally
+document.addEventListener('wheel', function(e) {
+  if (document.activeElement.type === 'number') {
+    document.activeElement.blur();
+  }
+}, { passive: false });
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

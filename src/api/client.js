@@ -55,7 +55,7 @@ apiClient.interceptors.response.use(
 
             const { accessToken } = response.data
 
-            // Update stored token
+            // Update stored token properly
             const updatedState = {
               ...state,
               accessToken,
@@ -68,10 +68,14 @@ apiClient.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        // Refresh failed, logout user
-        localStorage.removeItem('auth-storage')
-        window.location.href = '/login'
-        toast.error('Session expired. Please login again.')
+        // Only logout if refresh truly failed, not on page refresh
+        console.error('Token refresh failed:', refreshError)
+        // Don't auto-logout on page refresh - let user stay logged in
+        if (refreshError.response?.status === 401) {
+          localStorage.removeItem('auth-storage')
+          window.location.href = '/login'
+          toast.error('Session expired. Please login again.')
+        }
         return Promise.reject(refreshError)
       }
     }
@@ -79,8 +83,8 @@ apiClient.interceptors.response.use(
     // Handle other errors
     const errorMessage = error.response?.data?.message || error.message || 'An error occurred'
     
-    // Don't show toast for certain endpoints
-    if (!originalRequest.url?.includes('/auth/')) {
+    // Don't show toast for certain endpoints or network errors
+    if (!originalRequest.url?.includes('/auth/') && error.response) {
       toast.error(errorMessage)
     }
 

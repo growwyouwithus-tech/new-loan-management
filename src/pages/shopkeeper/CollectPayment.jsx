@@ -103,10 +103,13 @@ export default function CollectPayment() {
       const existingPayments = selectedLoan.payments || []
       const emiNumber = existingPayments.length + 1
 
+      // Use _id for MongoDB loans
+      const backendLoanId = selectedLoan._id || selectedLoan.id;
+
       // Create payment record for EMI Management
       const paymentRecord = {
         id: `PAY${Date.now()}`,
-        loanId: loanId,
+        loanId: backendLoanId,
         amount: parseFloat(data.amount),
         method: data.method,
         transactionId: data.transactionId || '',
@@ -122,8 +125,6 @@ export default function CollectPayment() {
       await db.payments.add(paymentRecord)
       
       // Update loan store with payment using collectPayment function
-      // Use _id for MongoDB loans
-      const backendLoanId = selectedLoan._id || selectedLoan.id;
       
       await collectPayment(backendLoanId, {
         amount: parseFloat(data.amount),

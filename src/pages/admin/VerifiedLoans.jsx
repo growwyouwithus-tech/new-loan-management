@@ -87,39 +87,34 @@ export default function VerifiedLoans() {
     toast.info('Filters have been reset');
   };
 
-  const updateLoanStatus = (id, newStatus) => {
-    let success = false;
-    
-    if (newStatus === 'Approved') {
-      success = approveLoan(id);
-      if (success) {
+  const updateLoanStatus = async (id, newStatus) => {
+    try {
+      setIsLoading(true);
+      
+      if (newStatus === 'Approved') {
+        await approveLoan(id);
         // Initialize active loans for collections
         initializeActiveLoans();
+        toast.success('Loan approved successfully!');
+      } else if (newStatus === 'Rejected') {
+        await rejectLoan(id, 'Rejected by admin');
+        toast.success('Loan rejected successfully!');
+      } else if (newStatus === 'Pending') {
+        // Update to pending status via API
+        await loanStore.getState().updateLoanStatus(id, 'Pending', 'Moved back to pending');
+        toast.success('Loan moved to pending successfully!');
       }
-    } else if (newStatus === 'Rejected') {
-      success = rejectLoan(id, 'Rejected by admin');
-    } else if (newStatus === 'Pending') {
-      // Update to pending status
-      const loan = loans.find(l => l.id === id);
-      if (loan) {
-        const updatedLoan = { ...loan, status: 'Pending' };
-        success = true;
-        // Update the loan in the store
-        loanStore.setState(state => ({
-          loans: state.loans.map(l => l.id === id ? updatedLoan : l),
-          verifiedLoans: state.verifiedLoans.map(l => l.id === id ? updatedLoan : l)
-        }));
-      }
-    }
-    
-    if (success) {
-      toast.success(`Loan ${newStatus.toLowerCase()} successfully!`);
+      
       // Update selected loan if it's the one being updated
       if (selectedLoan && selectedLoan.id === id) {
         setSelectedLoan(prev => ({ ...prev, status: newStatus }));
       }
-    } else {
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error updating loan status:', error);
       toast.error('Failed to update loan status');
+      setIsLoading(false);
     }
   };
 

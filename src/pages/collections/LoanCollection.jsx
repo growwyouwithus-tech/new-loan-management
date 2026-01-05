@@ -104,19 +104,19 @@ export default function LoanCollection() {
   // Filter loans based on search and status
   const handleFilter = () => {
     let filtered = [...loans];
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(loan => 
+      filtered = filtered.filter(loan =>
         loan.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         loan.loanId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         loan.mobile.includes(searchTerm)
       );
     }
-    
+
     if (statusFilter !== 'All') {
       filtered = filtered.filter(loan => loan.status === statusFilter);
     }
-    
+
     setFilteredLoans(filtered);
   };
 
@@ -147,13 +147,13 @@ export default function LoanCollection() {
     };
 
     const success = collectPayment(selectedLoan.id, paymentData);
-    
+
     if (success) {
       setShowPaymentModal(false);
       setPaymentAmount('');
       setPaymentMode('');
       setPaymentProof(null);
-      
+
       toast.success(`Payment of ₹${paymentAmount} collected successfully!`);
     } else {
       toast.error('Failed to collect payment. Please try again.');
@@ -228,7 +228,8 @@ export default function LoanCollection() {
       </div>
 
       {/* Loans Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Desktop View - Table */}
+      <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -312,12 +313,98 @@ export default function LoanCollection() {
                     >
                       <Phone className="h-4 w-4" />
                     </button>
+                    <button
+                      onClick={() => window.open(`https://wa.me/91${loan.mobile.replace(/\D/g, '')}?text=Hi ${loan.clientName}, this is regarding your loan ${loan.loanId}. Your EMI of ₹${loan.emiAmount} is due on ${loan.nextDueDate}. Please make the payment to avoid late charges.`)}
+                      className="text-green-600 hover:text-green-900"
+                      title="Send WhatsApp Reminder"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile View - Cards */}
+      <div className="md:hidden space-y-4">
+        {filteredLoans.map((loan) => (
+          <div key={loan.id} className="bg-white rounded-lg shadow p-4 space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="ml-3">
+                  <div className="text-sm font-medium text-gray-900">{loan.clientName}</div>
+                  <div className="text-xs text-gray-500">{loan.loanId}</div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${statusColors[loan.status]}`}>
+                    {loan.status}
+                  </span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-bold text-gray-900">₹{loan.emiAmount.toLocaleString()}</div>
+                <div className="text-xs text-gray-500">EMI Amount</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm border-t border-b border-gray-100 py-3">
+              <div>
+                <p className="text-gray-500 text-xs">Due Date</p>
+                <p className="font-medium">{loan.nextDueDate}</p>
+                {loan.status === 'Overdue' && (
+                  <p className="text-xs text-red-500">{getDaysOverdue(loan.nextDueDate)} days overdue</p>
+                )}
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Progress</p>
+                <p className="font-medium">{loan.emisPaid}/{loan.tenure} Paid</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Mobile</p>
+                <p className="font-medium">{loan.mobile}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Product</p>
+                <p className="font-medium truncate">{loan.productName}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              {loan.status !== 'Paid' && (
+                <button
+                  onClick={() => handleCollectPayment(loan)}
+                  className="flex-1 bg-green-600 text-white py-2 rounded-md text-sm font-medium hover:bg-green-700"
+                >
+                  Collect
+                </button>
+              )}
+              <button
+                onClick={() => handleViewDetails(loan)}
+                className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-md text-sm font-medium hover:bg-gray-50"
+              >
+                Details
+              </button>
+              <button
+                onClick={() => window.open(`tel:${loan.mobile}`)}
+                className="p-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                title="Call"
+              >
+                <Phone className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => window.open(`https://wa.me/91${loan.mobile.replace(/\D/g, '')}?text=Hi ${loan.clientName}, this is regarding your loan ${loan.loanId}.`)}
+                className="p-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                title="WhatsApp"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Loan Details Modal */}

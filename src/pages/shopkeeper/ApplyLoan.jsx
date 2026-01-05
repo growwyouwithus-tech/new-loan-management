@@ -1,4 +1,4 @@
-  import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,6 +7,8 @@ import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Phone, Calendar, CreditCard, ChevronDown, ChevronUp, Briefcase, Banknote, Building, Hash, ChevronsRight, ArrowRight, ArrowLeft, Printer, X, Camera } from 'lucide-react';
 import loanStore from '../../store/loanStore';
+import { useAuthStore } from '../../store/authStore';
+import shopkeeperStore from '../../store/shopkeeperStore';
 import fileIcon from '../../assets/file.png';
 import cameraIcon from '../../assets/camera.png';
 import '../../styles/printStyles.css';
@@ -71,7 +73,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0);
-      
+
       canvas.toBlob((blob) => {
         if (blob) {
           const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
@@ -94,10 +96,10 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
         >
           <X className="h-4 w-4 md:h-5 md:w-5" />
         </button>
-        
+
         <div className="text-center">
           <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Take Photo</h3>
-          
+
           {error ? (
             <div className="p-3 md:p-4 bg-red-50 text-red-600 rounded-lg text-sm md:text-base">
               {error}
@@ -113,7 +115,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
                   className="w-full h-auto max-h-[60vh]"
                 />
               </div>
-              
+
               <button
                 onClick={capturePhoto}
                 className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center mx-auto gap-2 text-sm md:text-base"
@@ -124,7 +126,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
             </>
           )}
         </div>
-        
+
         <canvas ref={canvasRef} className="hidden" />
       </div>
     </div>
@@ -184,18 +186,18 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
   const handleCameraCapture = (file) => {
     setSelectedFile(file.name);
     createPreview(file);
-    
+
     // Create a synthetic event for react-hook-form
     const dataTransfer = new DataTransfer();
     dataTransfer.items.add(file);
-    
+
     if (fileInputRef.current) {
       fileInputRef.current.files = dataTransfer.files;
       const event = new Event('change', { bubbles: true });
       Object.defineProperty(event, 'target', { value: fileInputRef.current, enumerable: true });
       onChangeRHF(event);
     }
-    
+
     if (galleryInputRef.current) {
       galleryInputRef.current.files = dataTransfer.files;
     }
@@ -206,12 +208,20 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
     if (file) {
       setSelectedFile(file.name);
       createPreview(file);
-      onChangeRHF(e);
-      // Sync file input
+
+      // Sync file input first
       if (fileInputRef.current) {
         const dataTransfer = new DataTransfer();
         dataTransfer.items.add(file);
         fileInputRef.current.files = dataTransfer.files;
+
+        // Create proper event for react-hook-form
+        const syntheticEvent = new Event('change', { bubbles: true });
+        Object.defineProperty(syntheticEvent, 'target', {
+          value: fileInputRef.current,
+          enumerable: true
+        });
+        onChangeRHF(syntheticEvent);
       }
     }
   };
@@ -269,9 +279,9 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
           </div>
           {previewUrl && (
             <div className="mt-3">
-              <img 
-                src={previewUrl} 
-                alt="Preview" 
+              <img
+                src={previewUrl}
+                alt="Preview"
                 className="w-32 h-32 object-cover rounded-lg border-2 border-green-500 shadow-md"
               />
             </div>
@@ -439,18 +449,18 @@ export default function ApplyLoan() {
   const navigate = useNavigate();
   const location = useLocation();
   const editLoan = location.state?.editLoan;
-  
+
   // Stage management: 'aadhar' -> 'mode' -> 'form'
   const [stage, setStage] = useState(editLoan ? 'form' : 'aadhar');
-  
+
   // Aadhar check page state
   const [aadhaarInput, setAadhaarInput] = useState('');
   const [aadhaarSearched, setAadhaarSearched] = useState(false);
   const [aadhaarMatches, setAadhaarMatches] = useState([]);
-  
+
   // Mode selection state
   const [applicationMode, setApplicationMode] = useState(editLoan ? (editLoan.applicationMode || 'max_born_group') : null);
-  
+
   // Form state
   const [step, setStep] = useState(0);
   const [isAddressOpen, setIsAddressOpen] = useState(true);
@@ -459,8 +469,10 @@ export default function ApplyLoan() {
   const [missingFields, setMissingFields] = useState([]);
   const [isEditMode, setIsEditMode] = useState(!!editLoan);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const { addLoanApplication, loans, updateLoan } = loanStore();
+  const { user, accessToken, isAuthenticated } = useAuthStore();
+  const { shopkeepers, updateShopkeeperTokens, fetchShopkeepers } = shopkeeperStore();
 
   const resetForm = () => {
     setStep(0);
@@ -471,6 +483,11 @@ export default function ApplyLoan() {
     setAadhaarSearched(false);
     setAadhaarMatches([]);
   };
+
+  // Fetch shopkeepers on mount
+  useEffect(() => {
+    fetchShopkeepers();
+  }, [fetchShopkeepers]);
 
   // Update schemas based on application mode
   useEffect(() => {
@@ -507,7 +524,7 @@ export default function ApplyLoan() {
         state: editLoan.state || '',
         aadharNumber: editLoan.customerAadhaar || editLoan.clientAadharNumber || '',
         panNumber: editLoan.customerPan || '',
-        
+
         // Guarantor details
         relation: editLoan.guarantorRelationship || '',
         guarantorFullName: editLoan.guarantorName || '',
@@ -524,7 +541,7 @@ export default function ApplyLoan() {
         guarantorAadharNumber: editLoan.guarantorAadhaar || '',
         referenceName: editLoan.referenceName || '',
         referenceNumber: editLoan.referenceNumber || '',
-        
+
         // Product details
         category: editLoan.productCategory || '',
         productName: editLoan.productName || '',
@@ -535,23 +552,23 @@ export default function ApplyLoan() {
         securityKey: editLoan.securityKey || '',
         tenure: editLoan.tenure || '',
         emiStartDate: editLoan.emiStartDate || '',
-        
+
         // Bank details
         bankName: editLoan.bankName || '',
         accountNumber: editLoan.accountNumber || '',
         ifscCode: editLoan.ifscCode || '',
         paymentMode: editLoan.paymentMode || '',
       };
-      
+
       setAllFormData(formData);
-      
+
       // Set values for current step
       Object.keys(formData).forEach(key => {
         if (formData[key]) {
           setValue(key, formData[key]);
         }
       });
-      
+
       toast.info('Editing loan application. Update the details as needed.');
     }
   }, [editLoan, isEditMode, setValue]);
@@ -562,12 +579,12 @@ export default function ApplyLoan() {
   const minDownPayment = price ? Math.ceil(price * 0.25) : 0;
   const downPayment = customDownPayment && customDownPayment > 0 ? customDownPayment : minDownPayment;
   const loanAmount = price ? price - downPayment : 0;
-  
+
   // Dynamic interest rate based on down payment percentage
   const getInterestRate = () => {
     if (!price || !downPayment) return 0.0375; // Default 3.75%
     const downPaymentPercentage = (downPayment / price) * 100;
-    
+
     if (downPaymentPercentage >= 35) {
       return 0.03; // 3%
     } else if (downPaymentPercentage > 25) {
@@ -576,7 +593,7 @@ export default function ApplyLoan() {
       return 0.0375; // 3.75%
     }
   };
-  
+
   const interest = getInterestRate();
   const fileCharge = 300;
 
@@ -584,11 +601,11 @@ export default function ApplyLoan() {
     if (!loanAmount || !tenure) return 0;
     const n = parseInt(tenure);
     // Simple flat interest: Monthly interest = loanAmount × 3.5%
-    const monthlyInterest =    loanAmount * interest;
+    const monthlyInterest = loanAmount * interest;
     // Total interest for all months
     const totalInterest = monthlyInterest * n;
     // Total payable = loan amount + total interest
-    const totalPayable =  loanAmount + totalInterest;
+    const totalPayable = loanAmount + totalInterest;
     // EMI = total payable / number of months
     const emi = totalPayable / n;
     return Math.ceil(emi);
@@ -732,7 +749,12 @@ export default function ApplyLoan() {
       if (value instanceof FileList) return value.length === 0;
       if (value instanceof File) return false; // File object exists, field is filled
       // Check if it's an array of files (some form libraries use this)
-      if (Array.isArray(value)) return value.length === 0;
+      if (Array.isArray(value)) {
+        if (value.length === 0) return true;
+        // Check if array contains File objects
+        if (value[0] instanceof File) return false;
+        return true;
+      }
       return false;
     });
 
@@ -749,10 +771,10 @@ export default function ApplyLoan() {
   const nextStep = () => {
     if (!validateCurrentStep()) return;
     const currentData = watch();
-    setAllFormData(prev => ({ 
-      ...prev, 
+    setAllFormData(prev => ({
+      ...prev,
       [`step${step}`]: currentData,
-      ...currentData 
+      ...currentData
     }));
     // Prevent going beyond the last step to avoid accidental auto-submit or skipping
     setStep((s) => (s >= steps.length - 1 ? s : s + 1));
@@ -771,21 +793,21 @@ export default function ApplyLoan() {
         resolve(null);
         return;
       }
-      
+
       // If it's already a string (base64), return it
       if (typeof file === 'string') {
         resolve(file);
         return;
       }
-      
+
       // If it's a FileList, get the first file
       const fileObj = file instanceof FileList ? file[0] : file;
-      
+
       if (!fileObj || !(fileObj instanceof File)) {
         resolve(null);
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result);
       reader.onerror = reject;
@@ -796,35 +818,62 @@ export default function ApplyLoan() {
   const onSubmit = async (data) => {
     console.log('Submit called on step:', step);
     console.log('Form data:', data);
-    
+
     // Skip validation on preview step (step 5)
     if (step !== 5 && !validateCurrentStep()) {
       console.log('Validation failed on step:', step);
       return;
     }
-    
+
     console.log('Validation passed, proceeding with submission');
-    
+
     // Set submitting state to true
     setIsSubmitting(true);
-    
+
+    // Check if this is a new loan application (not edit mode)
+    if (!isEditMode) {
+      // Check shopkeeper token balance
+      const currentShopkeeper = shopkeepers.find(sk => sk.email === user.email);
+      if (!currentShopkeeper) {
+        toast.error('Shopkeeper not found. Please login again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if ((currentShopkeeper.tokenBalance || 0) < 1) {
+        toast.error('Insufficient tokens! You need at least 1 token to apply for a loan.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Confirm token consumption
+      const confirmTokenUse = window.confirm(
+        `This loan application will consume 1 token from your balance. Current balance: ${currentShopkeeper.tokenBalance} tokens. Do you want to continue?`
+      );
+
+      if (!confirmTokenUse) {
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     // Combine all form data from all steps
     const completeFormData = { ...allFormData, ...data };
-    
+
     // Validate that client and guarantor mobile numbers are different
     const clientMobile = completeFormData.mobile;
     const guarantorMobile = completeFormData.guarantorMobile || allFormData.guarantorMobile;
-    
+
     if (clientMobile && guarantorMobile && clientMobile === guarantorMobile) {
       toast.error('Client aur Guarantor ka mobile number same nahi ho sakta!');
       setIsSubmitting(false);
       return;
     }
-    
+
     // Convert all images to base64
     try {
       toast.info('Images upload ho rahi hain, please wait...');
-      
+
       const [
         clientPhoto,
         clientAadharFront,
@@ -844,7 +893,7 @@ export default function ApplyLoan() {
         fileToBase64(completeFormData.guarantorAadharBack),
         fileToBase64(completeFormData.guarantorPanFront),
       ]);
-      
+
       // Update form data with base64 images
       completeFormData.photo = clientPhoto;
       completeFormData.aadharFront = clientAadharFront;
@@ -854,14 +903,14 @@ export default function ApplyLoan() {
       completeFormData.guarantorAadharFront = guarantorAadharFront;
       completeFormData.guarantorAadharBack = guarantorAadharBack;
       completeFormData.guarantorPanFront = guarantorPanFront;
-      
+
     } catch (error) {
       console.error('Error converting images:', error);
       toast.error('Images convert karne me error aaya. Please try again.');
       setIsSubmitting(false);
       return;
     }
-    
+
     // Structure the loan application data
     const loanApplicationData = {
       // Client Details
@@ -881,13 +930,13 @@ export default function ApplyLoan() {
       },
       clientAadharNumber: completeFormData.aadharNumber,
       clientPanNumber: completeFormData.panNumber,
-      
+
       // Client Images (base64)
       clientPhoto: completeFormData.photo,
       clientAadharFront: completeFormData.aadharFront,
       clientAadharBack: completeFormData.aadharBack,
       clientPanFront: completeFormData.panFront,
-      
+
       // Guarantor Details - Get from step 1 form data
       guarantor: {
         name: completeFormData.guarantorFullName || allFormData.guarantorFullName || 'Guarantor Name',
@@ -912,7 +961,7 @@ export default function ApplyLoan() {
         aadharBack: completeFormData.guarantorAadharBack || allFormData.guarantorAadharBack,
         panFront: completeFormData.guarantorPanFront || allFormData.guarantorPanFront,
       },
-      
+
       // Product Details
       productCategory: completeFormData.category,
       productName: completeFormData.productName,
@@ -921,35 +970,60 @@ export default function ApplyLoan() {
       serialNumber: completeFormData.serialNumber,
       tenure: completeFormData.tenure ? parseInt(completeFormData.tenure) : undefined,
       emiStartDate: completeFormData.emiStartDate,
-      
+
       // Calculated Financial Details
       downPayment: downPayment,
       loanAmount: loanAmount,
       emiAmount: emi,
       interestRate: interest,
       fileCharge: fileCharge,
-      
+
       // Bank Details
       bankName: completeFormData.bankName,
       accountNumber: completeFormData.accountNumber,
       ifscCode: completeFormData.ifscCode,
       paymentMode: completeFormData.paymentMode,
-      
+
       // Additional metadata
       month: new Date().toLocaleString('default', { month: 'long' }),
       applicationMode,
     };
+
+    // Check authentication before submitting
+    console.log('Authentication Status:', { isAuthenticated, user, hasToken: !!accessToken });
+
+    if (!isAuthenticated || !accessToken) {
+      toast.error('Please login first to submit loan application');
+      setIsSubmitting(false);
+      navigate('/login');
+      return;
+    }
+
+    if (user?.role !== 'shopkeeper' && user?.role !== 'admin') {
+      toast.error('Only shopkeepers can submit loan applications');
+      setIsSubmitting(false);
+      return;
+    }
 
     // Add to loan store (async function)
     addLoanApplication(loanApplicationData)
       .then((newLoan) => {
         console.log('Loan Application Submitted:', newLoan);
         toast.success(`Loan application submitted successfully! Loan ID: ${newLoan.loanId || newLoan._id}`);
-        
+
+        // Deduct token for new loan applications
+        if (!isEditMode) {
+          const currentShopkeeper = shopkeepers.find(sk => sk.email === user.email);
+          if (currentShopkeeper) {
+            updateShopkeeperTokens(currentShopkeeper.id, (currentShopkeeper.tokenBalance || 0) - 1);
+            toast.info('1 token deducted from your balance');
+          }
+        }
+
         // Reset form and submitting state
         resetForm();
         setIsSubmitting(false);
-        
+
         // Redirect to My Loans page after 1.5 seconds
         setTimeout(() => {
           navigate('/shopkeeper/my-loans');
@@ -957,7 +1031,17 @@ export default function ApplyLoan() {
       })
       .catch((error) => {
         console.error('Error submitting loan application:', error);
-        toast.error(error.response?.data?.message || 'Failed to submit loan application. Please try again.');
+        console.error('Error response:', error.response);
+        console.error('Auth token:', accessToken ? 'Present' : 'Missing');
+
+        if (error.response?.status === 403) {
+          toast.error('Access denied. Please check your login status and role.');
+        } else if (error.response?.status === 401) {
+          toast.error('Session expired. Please login again.');
+          navigate('/login');
+        } else {
+          toast.error(error.response?.data?.message || 'Failed to submit loan application. Please try again.');
+        }
         setIsSubmitting(false);
       });
   };
@@ -997,7 +1081,7 @@ export default function ApplyLoan() {
                 {errors.gender && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.gender.message}</p>}
                 {missingFields.includes('gender') && !errors.gender && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
               </div>
-              
+
               <AddressFields register={register} errors={errors} isOpen={isAddressOpen} toggle={() => setIsAddressOpen(!isAddressOpen)} missingFields={missingFields} />
               <FileInput name="photo" label="Live Photo Upload *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('photo')} />
               <FormInput name="aadharNumber" label="Aadhar Number *" register={register} errors={errors} icon={CreditCard} maxLength={12} placeholder="12-digit number" isMissing={missingFields.includes('aadharNumber')} />
@@ -1037,58 +1121,58 @@ export default function ApplyLoan() {
         );
       case 2: // Guarantor Details
         return (
-            <div className="space-y-4">
-                {bankAccountFilled && (
-                  <div className="mb-4 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Skip to next step without validation
-                        const currentData = watch();
-                        setAllFormData(prev => ({ 
-                          ...prev, 
-                          [`step${step}`]: currentData,
-                          ...currentData 
-                        }));
-                        setStep(s => (s >= steps.length - 1 ? s : s + 1));
-                      }}
-                      className="px-3 py-1.5 text-xs text-blue-700 font-medium border border-blue-300 bg-white hover:bg-blue-50 rounded transition"
-                    >
-                      Skip
-                    </button>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('relation') ? 'text-red-600' : 'text-gray-700'}`}>Relation *</label>
-                        <select {...register('relation')} className={`w-full rounded-lg border-2 py-2.5 px-3 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${missingFields.includes('relation') ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-400 hover:border-gray-300'}`}>
-                            <option value="">Select Relation</option>
-                            {[, 'father', 'elder_brother', 'elder_sister', 'colleague','neighbor'].map(r => <option key={r} value={r} className="capitalize">{r.replace('_', ' ')}</option>)}
-                        </select>
-                        {errors.relation && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.relation.message}</p>}
-                        {missingFields.includes('relation') && !errors.relation && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
-                    </div>
-                    <div className="md:col-span-2"></div> {/* Spacer */}
-                    <FormInput name="guarantorFullName" label="Full Name *" register={register} errors={errors} icon={User} placeholder="Enter guarantor full name" isMissing={missingFields.includes('guarantorFullName')} />
-                    <div>
-                        <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('guarantorGender') ? 'text-red-600' : 'text-gray-700'}`}>Gender *</label>
-                        <div className="flex space-x-6 mt-3">
-                            {['male', 'female', 'other'].map(g => <label key={g} className="inline-flex items-center cursor-pointer group"><input type="radio" value={g} {...register('guarantorGender')} className="h-5 w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2.5 capitalize font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{g}</span></label>)}
-                        </div>
-                        {errors.guarantorGender && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.guarantorGender.message}</p>}
-                        {missingFields.includes('guarantorGender') && !errors.guarantorGender && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
-                    </div>
-                    <FormInput name="guarantorMobile" label="Mobile Number *" type="tel" register={register} errors={errors} icon={Phone} maxLength={10} placeholder="10-digit number" isMissing={missingFields.includes('guarantorMobile')} />
-                    <FormInput name="guarantorWorkingAddress" label="Working Address *" register={register} errors={errors} icon={Briefcase} placeholder="Enter working address" isMissing={missingFields.includes('guarantorWorkingAddress')} />
-                    <AddressFields register={register} errors={errors} isOpen={isAddressOpen} toggle={() => setIsAddressOpen(!isAddressOpen)} prefix="guarantor" missingFields={missingFields} />
-                    <FileInput name="guarantorPhoto" label="Live Photo Upload *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorPhoto')} />
-                    <FormInput name="guarantorAadharNumber" label="Aadhar Number *" register={register} errors={errors} icon={CreditCard} maxLength={12} placeholder="12-digit number" isMissing={missingFields.includes('guarantorAadharNumber')} />
-                    <FileInput name="guarantorAadharFront" label="Aadhar Front Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorAadharFront')} />
-                    <FileInput name="guarantorAadharBack" label="Aadhar Back Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorAadharBack')} />
-                    <FormInput name="referenceName" label="Reference Name" register={register} errors={errors} icon={User} placeholder="Enter reference name" isMissing={missingFields.includes('referenceName')} />
-                    <FormInput name="referenceNumber" label="Reference Mobile Number" type="tel" register={register} errors={errors} icon={Phone} maxLength={10} placeholder="10-digit number" isMissing={missingFields.includes('referenceNumber')} />
+          <div className="space-y-4">
+            {bankAccountFilled && (
+              <div className="mb-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Skip to next step without validation
+                    const currentData = watch();
+                    setAllFormData(prev => ({
+                      ...prev,
+                      [`step${step}`]: currentData,
+                      ...currentData
+                    }));
+                    setStep(s => (s >= steps.length - 1 ? s : s + 1));
+                  }}
+                  className="px-3 py-1.5 text-xs text-blue-700 font-medium border border-blue-300 bg-white hover:bg-blue-50 rounded transition"
+                >
+                  Skip
+                </button>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('relation') ? 'text-red-600' : 'text-gray-700'}`}>Relation *</label>
+                <select {...register('relation')} className={`w-full rounded-lg border-2 py-2.5 px-3 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${missingFields.includes('relation') ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-400 hover:border-gray-300'}`}>
+                  <option value="">Select Relation</option>
+                  {['father', 'elder_brother', 'elder_sister', 'colleague', 'neighbor'].map(r => <option key={r} value={r} className="capitalize">{r.replace('_', ' ')}</option>)}
+                </select>
+                {errors.relation && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.relation.message}</p>}
+                {missingFields.includes('relation') && !errors.relation && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
+              </div>
+              <div className="md:col-span-2"></div> {/* Spacer */}
+              <FormInput name="guarantorFullName" label="Full Name *" register={register} errors={errors} icon={User} placeholder="Enter guarantor full name" isMissing={missingFields.includes('guarantorFullName')} />
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('guarantorGender') ? 'text-red-600' : 'text-gray-700'}`}>Gender *</label>
+                <div className="flex space-x-6 mt-3">
+                  {['male', 'female', 'other'].map(g => <label key={g} className="inline-flex items-center cursor-pointer group"><input type="radio" value={g} {...register('guarantorGender')} className="h-5 w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2.5 capitalize font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{g}</span></label>)}
                 </div>
+                {errors.guarantorGender && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.guarantorGender.message}</p>}
+                {missingFields.includes('guarantorGender') && !errors.guarantorGender && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
+              </div>
+              <FormInput name="guarantorMobile" label="Mobile Number *" type="tel" register={register} errors={errors} icon={Phone} maxLength={10} placeholder="10-digit number" isMissing={missingFields.includes('guarantorMobile')} />
+              <FormInput name="guarantorWorkingAddress" label="Working Address *" register={register} errors={errors} icon={Briefcase} placeholder="Enter working address" isMissing={missingFields.includes('guarantorWorkingAddress')} />
+              <AddressFields register={register} errors={errors} isOpen={isAddressOpen} toggle={() => setIsAddressOpen(!isAddressOpen)} prefix="guarantor" missingFields={missingFields} />
+              <FileInput name="guarantorPhoto" label="Live Photo Upload *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorPhoto')} />
+              <FormInput name="guarantorAadharNumber" label="Aadhar Number *" register={register} errors={errors} icon={CreditCard} maxLength={12} placeholder="12-digit number" isMissing={missingFields.includes('guarantorAadharNumber')} />
+              <FileInput name="guarantorAadharFront" label="Aadhar Front Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorAadharFront')} />
+              <FileInput name="guarantorAadharBack" label="Aadhar Back Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorAadharBack')} />
+              <FormInput name="referenceName" label="Reference Name" register={register} errors={errors} icon={User} placeholder="Enter reference name" isMissing={missingFields.includes('referenceName')} />
+              <FormInput name="referenceNumber" label="Reference Mobile Number" type="tel" register={register} errors={errors} icon={Phone} maxLength={10} placeholder="10-digit number" isMissing={missingFields.includes('referenceNumber')} />
             </div>
+          </div>
         );
       case 3: // Product Details
         return (
@@ -1707,17 +1791,23 @@ export default function ApplyLoan() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </button>
-        
+
         <div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-1 md:mb-2 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">New Loan Application</h1>
             <p className="text-gray-600 text-xs md:text-sm">Complete the form to apply for a loan</p>
           </div>
-          <div className={`px-3 md:px-5 py-2 md:py-2.5 rounded-full font-bold text-white text-xs md:text-sm shadow-lg bg-gradient-to-r from-green-600 to-emerald-600 whitespace-nowrap`}>
-            {applicationMode === 'self' ? '🔵 Self Loan' : '🟢 Max Born Group'}
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <div className={`px-3 md:px-5 py-2 md:py-2.5 rounded-full font-bold text-white text-xs md:text-sm shadow-lg border border-purple-200 bg-gradient-to-r from-purple-600 to-indigo-600 whitespace-nowrap flex items-center gap-2`}>
+              <span className="bg-white text-purple-700 rounded-full w-5 h-5 flex items-center justify-center text-xs">🎫</span>
+              Tokens: {(shopkeepers.find(sk => sk.email === user?.email)?.tokenBalance ?? 0)}
+            </div>
+            <div className={`px-3 md:px-5 py-2 md:py-2.5 rounded-full font-bold text-white text-xs md:text-sm shadow-lg bg-gradient-to-r from-green-600 to-emerald-600 whitespace-nowrap`}>
+              {applicationMode === 'self' ? '🔵 Self Loan' : '🟢 Max Born Group'}
+            </div>
           </div>
         </div>
-        
+
         {/* Stepper */}
         <div className="overflow-x-auto mb-6 md:mb-10 mt-4 md:mt-6">
           <div className="flex items-center min-w-max bg-white rounded-xl p-3 md:p-4 shadow-sm border border-gray-100">
@@ -1787,11 +1877,10 @@ export default function ApplyLoan() {
                       onSubmit(watch());
                     }}
                     disabled={isSubmitting}
-                    className={`inline-flex items-center justify-center px-6 md:px-10 py-2.5 md:py-3 border border-transparent text-sm md:text-base font-bold rounded-lg shadow-xl text-white transition-all duration-200 ${
-                      isSubmitting 
-                        ? 'bg-gray-400 cursor-not-allowed' 
+                    className={`inline-flex items-center justify-center px-6 md:px-10 py-2.5 md:py-3 border border-transparent text-sm md:text-base font-bold rounded-lg shadow-xl text-white transition-all duration-200 ${isSubmitting
+                        ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 transform hover:scale-105'
-                    }`}
+                      }`}
                   >
                     {isSubmitting ? (
                       <>

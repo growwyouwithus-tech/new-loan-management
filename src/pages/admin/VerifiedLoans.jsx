@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'react-toastify';
+import { getImageUrl } from '../../utils/imageHelper';
 import { Search, RotateCcw, Check, X, Clock, UserCheck, Eye, Play, Pause, ThumbsDown } from 'lucide-react';
 import loanStore from '../../store/loanStore';
 
@@ -392,7 +393,7 @@ export default function VerifiedLoans() {
                       <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                         {selectedLoan.clientPhoto ? (
                           <img 
-                            src={selectedLoan.clientPhoto} 
+                            src={getImageUrl(selectedLoan.clientPhoto)} 
                             alt="Client Photo" 
                             className="max-h-full max-w-full object-contain rounded"
                           />
@@ -408,7 +409,7 @@ export default function VerifiedLoans() {
                       <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                         {selectedLoan.clientAadharFront ? (
                           <img 
-                            src={selectedLoan.clientAadharFront} 
+                            src={getImageUrl(selectedLoan.clientAadharFront)} 
                             alt="Aadhar Front" 
                             className="max-h-full max-w-full object-contain rounded"
                           />
@@ -424,7 +425,7 @@ export default function VerifiedLoans() {
                       <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                         {selectedLoan.clientAadharBack ? (
                           <img 
-                            src={selectedLoan.clientAadharBack} 
+                            src={getImageUrl(selectedLoan.clientAadharBack)} 
                             alt="Aadhar Back" 
                             className="max-h-full max-w-full object-contain rounded"
                           />
@@ -440,7 +441,7 @@ export default function VerifiedLoans() {
                       <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                         {selectedLoan.clientPanFront ? (
                           <img 
-                            src={selectedLoan.clientPanFront} 
+                            src={getImageUrl(selectedLoan.clientPanFront)} 
                             alt="PAN Card" 
                             className="max-h-full max-w-full object-contain rounded"
                           />
@@ -461,7 +462,7 @@ export default function VerifiedLoans() {
                         <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.photo ? (
                             <img 
-                              src={selectedLoan.guarantor.photo} 
+                              src={getImageUrl(selectedLoan.guarantor.photo)} 
                               alt="Guarantor Photo" 
                               className="max-h-full max-w-full object-contain rounded"
                             />
@@ -477,7 +478,7 @@ export default function VerifiedLoans() {
                         <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.aadharFront ? (
                             <img 
-                              src={selectedLoan.guarantor.aadharFront} 
+                              src={getImageUrl(selectedLoan.guarantor.aadharFront)} 
                               alt="Guarantor Aadhar Front" 
                               className="max-h-full max-w-full object-contain rounded"
                             />
@@ -493,7 +494,7 @@ export default function VerifiedLoans() {
                         <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.aadharBack ? (
                             <img 
-                              src={selectedLoan.guarantor.aadharBack} 
+                              src={getImageUrl(selectedLoan.guarantor.aadharBack)} 
                               alt="Guarantor Aadhar Back" 
                               className="max-h-full max-w-full object-contain rounded"
                             />
@@ -509,7 +510,7 @@ export default function VerifiedLoans() {
                         <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.panFront ? (
                             <img 
-                              src={selectedLoan.guarantor.panFront} 
+                              src={getImageUrl(selectedLoan.guarantor.panFront)} 
                               alt="Guarantor PAN Card" 
                               className="max-h-full max-w-full object-contain rounded"
                             />

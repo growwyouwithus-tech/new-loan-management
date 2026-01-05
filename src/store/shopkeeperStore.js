@@ -25,7 +25,7 @@ const shopkeeperStore = create(
           throw error;
         }
       },
-      
+
       // Add a new shopkeeper
       addShopkeeper: async (shopkeeperData) => {
         set({ loading: true, error: null });
@@ -47,6 +47,28 @@ const shopkeeperStore = create(
         }
       },
 
+      // Update shopkeeper details
+      updateShopkeeper: async (id, shopkeeperData) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await shopkeeperService.updateShopkeeper(id, shopkeeperData);
+          const updatedShopkeeper = response.shopkeeper || response;
+
+          set((state) => ({
+            shopkeepers: state.shopkeepers.map(s =>
+              (s.id === id || s._id === id) ? updatedShopkeeper : s
+            ),
+            loading: false,
+          }));
+
+          return updatedShopkeeper;
+        } catch (error) {
+          console.error('Failed to update shopkeeper:', error);
+          set({ loading: false, error: error.message });
+          throw error;
+        }
+      },
+
       // Update shopkeeper KYC status
       updateShopkeeperKYC: async (shopkeeperId, kycStatus, verifiedBy = 'admin') => {
         try {
@@ -56,7 +78,7 @@ const shopkeeperStore = create(
           });
 
           set((state) => ({
-            shopkeepers: state.shopkeepers.map(s => 
+            shopkeepers: state.shopkeepers.map(s =>
               (s.id === shopkeeperId || s._id === shopkeeperId) ? updatedShopkeeper : s
             ),
           }));
@@ -87,6 +109,26 @@ const shopkeeperStore = create(
           verifiedKYC: shopkeepers.filter(s => s.kycStatus === 'verified').length,
           rejectedKYC: shopkeepers.filter(s => s.kycStatus === 'rejected').length,
         };
+      },
+
+      // Update shopkeeper token balance
+      updateShopkeeperTokens: async (shopkeeperId, newTokenBalance) => {
+        try {
+          const updatedShopkeeper = await shopkeeperService.updateShopkeeperTokens(shopkeeperId, {
+            tokenBalance: newTokenBalance
+          });
+
+          set((state) => ({
+            shopkeepers: state.shopkeepers.map(s =>
+              (s.id === shopkeeperId || s._id === shopkeeperId) ? updatedShopkeeper : s
+            ),
+          }));
+
+          return true;
+        } catch (error) {
+          console.error('Failed to update shopkeeper tokens:', error);
+          throw error;
+        }
       },
 
       // Delete shopkeeper

@@ -38,6 +38,12 @@ export const shopkeeperService = {
     return response.data
   },
 
+  // Update shopkeeper token balance
+  updateShopkeeperTokens: async (id, tokenData) => {
+    const response = await apiClient.put(`/shopkeepers/${id}/tokens`, tokenData)
+    return response.data
+  },
+
   // Get shopkeeper statistics
   getStatistics: async () => {
     const response = await apiClient.get('/shopkeepers/statistics')

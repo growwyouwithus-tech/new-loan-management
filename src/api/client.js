@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { toast } from 'react-toastify'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://new-loan-management-br.vercel.app/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -68,16 +68,24 @@ apiClient.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        // Only logout if refresh truly failed, not on page refresh
+        // Token refresh failed - clear storage and redirect to login
         console.error('Token refresh failed:', refreshError)
-        // Don't auto-logout on page refresh - let user stay logged in
-        if (refreshError.response?.status === 401) {
-          localStorage.removeItem('auth-storage')
-          window.location.href = '/login'
+        localStorage.removeItem('auth-storage')
+        
+        // Only show toast and redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
           toast.error('Session expired. Please login again.')
+          window.location.href = '/login'
         }
+        
         return Promise.reject(refreshError)
       }
+    }
+
+    // Handle 403 Forbidden - Access denied
+    if (error.response?.status === 403) {
+      toast.error('Access denied. You do not have permission to perform this action.')
+      return Promise.reject(error)
     }
 
     // Handle other errors

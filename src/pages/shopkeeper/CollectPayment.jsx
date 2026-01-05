@@ -29,14 +29,14 @@ export default function CollectPayment() {
 
   // Get loans that are due for payment (active loans + approved loans that haven't been moved to active yet)
   const availableLoans = [
-    ...activeLoans.filter(loan => 
+    ...activeLoans.filter(loan =>
       (loan.status === 'Active' || loan.status === 'Overdue')
     ),
-    ...approvedLoans.filter(loan => 
+    ...approvedLoans.filter(loan =>
       loan.status === 'Approved'
     ),
     // Fallback: get all loans from main loans array that are not yet paid or rejected
-    ...allLoans.filter(loan => 
+    ...allLoans.filter(loan =>
       (loan.status === 'Active' || loan.status === 'Overdue' || loan.status === 'Approved' || loan.status === 'Verified' || loan.status === 'Pending') &&
       !activeLoans.find(al => al.id === loan.id) &&
       !approvedLoans.find(al => al.id === loan.id)
@@ -44,7 +44,7 @@ export default function CollectPayment() {
   ]
 
   // Remove duplicates based on loan ID
-  const loans = availableLoans.filter((loan, index, self) => 
+  const loans = availableLoans.filter((loan, index, self) =>
     index === self.findIndex(l => l.id === loan.id)
   )
 
@@ -83,17 +83,17 @@ export default function CollectPayment() {
     try {
       console.log('Form data:', data);
       console.log('Available loans:', loans);
-      
+
       // Find loan by matching both id and _id
       const loanIdFromForm = data.loanId;
-      const selectedLoan = loans.find(l => 
-        String(l.id) === String(loanIdFromForm) || 
+      const selectedLoan = loans.find(l =>
+        String(l.id) === String(loanIdFromForm) ||
         String(l._id) === String(loanIdFromForm)
       )
-      
+
       console.log('Looking for loan ID:', loanIdFromForm);
       console.log('Found loan:', selectedLoan);
-      
+
       if (!selectedLoan) {
         toast.error('Selected loan not found')
         return
@@ -120,13 +120,13 @@ export default function CollectPayment() {
         emiNumber: emiNumber,
         synced: false
       }
-      
+
       // Save to IndexedDB for offline support
       await db.payments.add(paymentRecord)
-      
+
       // Update loan store with payment using collectPayment function
-      
-      await collectPayment(backendLoanId, {
+
+      const result = await collectPayment(backendLoanId, {
         amount: parseFloat(data.amount),
         paymentMode: data.method,
         paymentDate: paymentRecord.date,
@@ -135,9 +135,13 @@ export default function CollectPayment() {
         emiNumber: emiNumber
       })
 
+      if (!result) {
+        throw new Error('Payment collection failed in store');
+      }
+
       // Also record in payments array for EMI Management
       recordPayment(paymentRecord)
-      
+
       toast.success(`EMI #${emiNumber} payment recorded successfully!`)
       reset()
       setSelectedLoan(null)
@@ -210,31 +214,31 @@ export default function CollectPayment() {
                       </p>
                     </div>
                   )}
-                <Select
-                  {...register('loanId')}
-                  onChange={(e) => {
-                    const loanIdValue = e.target.value
-                    const loan = loans.find((l) => 
-                      String(l.id) === String(loanIdValue) || 
-                      String(l._id) === String(loanIdValue)
-                    )
-                    setSelectedLoan(loan)
-                    
-                    // Auto-fill form fields when loan is selected
-                    if (loan) {
-                      const emiAmount = loan.emiAmount || loan.loanAmount || 0
-                      setValue('amount', emiAmount)
-                    }
-                  }}
-                >
-                  <option value="">Select loan</option>
-                  {filteredLoans.map((loan) => (
-                    <option key={loan._id || loan.id} value={loan._id || loan.id}>
-                      {loan.loanId || loan.id} - {loan.clientName || loan.customerName} - ₹{loan.emiAmount || 'N/A'}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+                  <Select
+                    {...register('loanId')}
+                    onChange={(e) => {
+                      const loanIdValue = e.target.value
+                      const loan = loans.find((l) =>
+                        String(l.id) === String(loanIdValue) ||
+                        String(l._id) === String(loanIdValue)
+                      )
+                      setSelectedLoan(loan)
+
+                      // Auto-fill form fields when loan is selected
+                      if (loan) {
+                        const emiAmount = loan.emiAmount || loan.loanAmount || 0
+                        setValue('amount', emiAmount)
+                      }
+                    }}
+                  >
+                    <option value="">Select loan</option>
+                    {filteredLoans.map((loan) => (
+                      <option key={loan._id || loan.id} value={loan._id || loan.id}>
+                        {loan.loanId || loan.id} - {loan.clientName || loan.customerName} - ₹{loan.emiAmount || 'N/A'}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
 
                 {selectedLoan && (
                   <div className="space-y-3">
@@ -286,23 +290,23 @@ export default function CollectPayment() {
 
                 <div>
                   <label className="text-xs md:text-sm font-semibold">Payment Amount</label>
-                <Input {...register('amount')} type="number" placeholder="Enter amount" />
-              </div>
+                  <Input {...register('amount')} type="number" placeholder="Enter amount" />
+                </div>
 
                 <div>
                   <label className="text-xs md:text-sm font-semibold">Payment Method</label>
-                <Select {...register('method')}>
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="card">Card</option>
-                  <option value="wallet">Wallet</option>
-                </Select>
-              </div>
+                  <Select {...register('method')}>
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="card">Card</option>
+                    <option value="wallet">Wallet</option>
+                  </Select>
+                </div>
 
                 <div>
                   <label className="text-xs md:text-sm font-semibold">Transaction ID (Optional)</label>
-                <Input {...register('transactionId')} placeholder="Enter transaction ID" />
-              </div>
+                  <Input {...register('transactionId')} placeholder="Enter transaction ID" />
+                </div>
 
                 <Button type="submit" className="!bg-green-500 !hover:bg-green-600 !text-white w-full h-12 md:h-10 text-sm font-semibold shadow-lg">
                   Record Payment
@@ -312,7 +316,7 @@ export default function CollectPayment() {
           </Card>
         </motion.div>
 
-              </div>
+      </div>
     </div>
   )
 }

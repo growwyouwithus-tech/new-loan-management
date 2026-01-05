@@ -1,27 +1,31 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Edit, Eye, Check, X, User, Phone, Mail, MapPin, CreditCard, Calendar, FileText } from 'lucide-react'
+import { Plus, Edit, Eye, Check, X, User, Phone, Mail, MapPin, CreditCard, Calendar, FileText, Filter } from 'lucide-react'
 import { toast } from 'react-toastify'
 import loanStore from '../../store/loanStore'
+import shopkeeperStore from '../../store/shopkeeperStore'
 
 export default function BorrowerManagement() {
   const { loans, updateCustomerKYC, fetchLoans, loading } = loanStore()
+  const { shopkeepers, fetchShopkeepers } = shopkeeperStore()
   const navigate = useNavigate()
   const [borrowers, setBorrowers] = useState([])
   const [viewingBorrower, setViewingBorrower] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [kycFilter, setKycFilter] = useState('all')
+  const [shopkeeperFilter, setShopkeeperFilter] = useState('all')
 
   // Fetch loans from backend on mount
   useEffect(() => {
     fetchLoans()
+    fetchShopkeepers()
   }, [])
 
   // Extract unique borrowers from loans
   useEffect(() => {
     const uniqueBorrowers = loans.reduce((acc, loan) => {
       const existingBorrower = acc.find(b => b.aadharNumber === loan.clientAadharNumber)
-      
+
       if (!existingBorrower) {
         acc.push({
           id: loan.id,
@@ -29,8 +33,8 @@ export default function BorrowerManagement() {
           fatherName: loan.clientFatherOrSpouseName,
           phone: loan.clientMobile,
           email: loan.clientEmail,
-          address: loan.clientAddress ? 
-            `${loan.clientAddress.houseNo}, ${loan.clientAddress.galiNo}, ${loan.clientAddress.colony}, ${loan.clientAddress.area}, ${loan.clientAddress.city} - ${loan.clientAddress.pincode}, ${loan.clientAddress.state}` 
+          address: loan.clientAddress ?
+            `${loan.clientAddress.houseNo}, ${loan.clientAddress.galiNo}, ${loan.clientAddress.colony}, ${loan.clientAddress.area}, ${loan.clientAddress.city} - ${loan.clientAddress.pincode}, ${loan.clientAddress.state}`
             : 'Address not available',
           aadharNumber: loan.clientAadharNumber,
           panNumber: loan.clientPanNumber,
@@ -39,10 +43,13 @@ export default function BorrowerManagement() {
           kycStatus: loan.kycStatus || 'pending',
           totalLoans: 1,
           activeLoans: loan.status === 'Active' ? 1 : 0,
+          amount: loan.loanAmount || 0,
           totalBorrowed: loan.loanAmount || 0,
           totalRepaid: (loan.payments || []).reduce((sum, payment) => sum + payment.amount, 0),
           loans: [loan],
           registrationDate: loan.appliedDate,
+          shopkeeperId: (loan.shopkeeperId?._id || loan.shopkeeperId?.id || loan.shopkeeperId || 'unknown').toString(),
+          shopkeeperName: loan.shopkeeperId?.fullName || loan.shopkeeperId?.username || loan.shopkeeperName || 'Unknown Shopkeeper',
         })
       } else {
         existingBorrower.totalLoans += 1
@@ -51,10 +58,10 @@ export default function BorrowerManagement() {
         existingBorrower.totalRepaid += (loan.payments || []).reduce((sum, payment) => sum + payment.amount, 0)
         existingBorrower.loans.push(loan)
       }
-      
+
       return acc
     }, [])
-    
+
     setBorrowers(uniqueBorrowers)
   }, [loans])
 
@@ -65,25 +72,27 @@ export default function BorrowerManagement() {
       borrower.loans.forEach(loan => {
         updateCustomerKYC(loan.id, newStatus)
       })
-      
+
       // Update local state
-      setBorrowers(prev => prev.map(b => 
+      setBorrowers(prev => prev.map(b =>
         b.id === borrowerId ? { ...b, kycStatus: newStatus } : b
       ))
-      
+
       toast.success(`KYC status updated to ${newStatus} for ${borrower.name}`)
     }
   }
 
-  // Filter borrowers based on search and KYC status
+  // Filter borrowers based on search, KYC status, and shopkeeper
   const filteredBorrowers = borrowers.filter(borrower => {
     const matchesSearch = borrower.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         borrower.phone.includes(searchTerm) ||
-                         borrower.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
+      borrower.phone.includes(searchTerm) ||
+      borrower.email.toLowerCase().includes(searchTerm.toLowerCase())
+
     const matchesKYC = kycFilter === 'all' || borrower.kycStatus === kycFilter
-    
-    return matchesSearch && matchesKYC
+
+    const matchesShopkeeper = shopkeeperFilter === 'all' || borrower.shopkeeperId === shopkeeperFilter
+
+    return matchesSearch && matchesKYC && matchesShopkeeper
   })
 
   const getKYCBadgeColor = (status) => {
@@ -173,6 +182,20 @@ export default function BorrowerManagement() {
               <option value="rejected">Rejected</option>
             </select>
           </div>
+          <div>
+            <select
+              value={shopkeeperFilter}
+              onChange={(e) => setShopkeeperFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Shopkeepers</option>
+              {shopkeepers.map(shopkeeper => (
+                <option key={shopkeeper.id} value={shopkeeper.id}>
+                  {shopkeeper.shopName || shopkeeper.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -256,7 +279,7 @@ export default function BorrowerManagement() {
                 </button>
               </div>
             </div>
-            
+
             <div className="px-6 py-4">
               {(() => {
                 const paymentData = getBorrowerPaymentData(viewingBorrower);
@@ -312,9 +335,8 @@ export default function BorrowerManagement() {
                                       <td className="px-4 py-2 text-sm text-gray-900">{dateLabel}</td>
                                       <td className="px-4 py-2 text-sm text-gray-900">₹{Number(p.amount || 0).toLocaleString()}</td>
                                       <td className="px-4 py-2 text-sm">
-                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                          p.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                        }`}>
+                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${p.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                          }`}>
                                           {p.isPaid ? 'Paid' : 'Pending'}
                                         </span>
                                       </td>
@@ -470,13 +492,12 @@ export default function BorrowerManagement() {
                           <td className="px-4 py-2 text-sm text-gray-900">{loan.productName}</td>
                           <td className="px-4 py-2 text-sm text-gray-900">₹{loan.loanAmount?.toLocaleString()}</td>
                           <td className="px-4 py-2">
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              loan.status === 'Active' ? '!bg-green-100 !text-green-800' :
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${loan.status === 'Active' ? '!bg-green-100 !text-green-800' :
                               loan.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                              loan.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
-                              loan.status === 'Paid' ? 'bg-gray-100 text-gray-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                                loan.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
+                                  loan.status === 'Paid' ? 'bg-gray-100 text-gray-800' :
+                                    'bg-red-100 text-red-800'
+                              }`}>
                               {loan.status}
                             </span>
                           </td>

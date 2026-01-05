@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
-import { Lock, Mail } from 'lucide-react'
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { useAuthStore } from '../../store/authStore'
 import Button from '../../components/ui/Button'
@@ -20,6 +20,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const login = useAuthStore((state) => state.login)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -41,7 +42,7 @@ export default function LoginPage() {
 
       if (result.success) {
         toast.success('Login successful!')
-        
+
         // Navigate based on role
         const userRole = result.user.role
         if (userRole === 'shopkeeper') {
@@ -106,19 +107,26 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     {...register('password')}
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    className="pl-10"
+                    className="pl-10 pr-10"
                     error={errors.password}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
                 {errors.password && (
                   <p className="text-sm text-destructive">{errors.password.message}</p>
                 )}
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 variant="success"
                 className="w-full"
                 loading={loading}
@@ -131,12 +139,12 @@ export default function LoginPage() {
               <p className="font-semibold text-green-600 dark:text-green-400">✅ Real Database Credentials (7 Users):</p>
               <div className="space-y-1 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
                 <p className="font-medium">Admin: admin@loanmanagement.com / admin123</p>
-                <p>Verifier: verifier@loanmanagement.com / verifier123</p>
-                <p>Collections: collections@loanmanagement.com / collections123</p>
-                <p>Supporter: supporter@loanmanagement.com / supporter123</p>
-                <p>Credit Manager: creditmanager@loanmanagement.com / credit123</p>
-                <p>Shopkeeper 1: shopkeeper1@example.com / shop123</p>
-                <p>Shopkeeper 2: shopkeeper2@example.com / shop123</p>
+                <p>Verifier: verifier@loanmanagement.com / 123456</p>
+                <p>Collections: collections@loanmanagement.com / 123456</p>
+                <p>Supporter: supporter@loanmanagement.com / 123456</p>
+                <p>Credit Manager: creditmanager@loanmanagement.com / 123456</p>
+                <p>Shopkeeper 1: shopkeeper1@example.com / 123456</p>
+                <p>Shopkeeper 2: shopkeeper2@example.com / 123456</p>
               </div>
               <p className="text-xs mt-2 text-green-600 dark:text-green-400">✓ Database: MongoDB Atlas (Connected)</p>
             </div>

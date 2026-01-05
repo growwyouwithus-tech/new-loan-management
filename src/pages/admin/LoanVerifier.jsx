@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 import { format, parseISO, isWithinInterval } from 'date-fns';
 import loanStore from '../../store/loanStore';
 import { toast } from 'react-toastify';
+import { getImageUrl } from '../../utils/imageHelper';
 
 // Using real API data from loanStore - no mock data
 
@@ -106,17 +107,23 @@ export default function LoanVerifier() {
 
       // Apply month filter
       if (selectedMonth !== 'All Months') {
-        filteredLoans = filteredLoans.filter(loan => loan.month === selectedMonth);
+        filteredLoans = filteredLoans.filter(loan => {
+          if (!loan.appliedDate) return false;
+          const loanDate = new Date(loan.appliedDate);
+          const monthName = months[loanDate.getMonth()];
+          return monthName === selectedMonth;
+        });
       }
 
       // Apply date range filter
       if (fromDate && toDate) {
-        const startDate = parseISO(fromDate);
-        const endDate = parseISO(toDate);
+        const startDate = new Date(fromDate);
+        const endDate = new Date(toDate);
         
         filteredLoans = filteredLoans.filter(loan => {
-          const loanDate = parseISO(loan.appliedDate);
-          return isWithinInterval(loanDate, { start: startDate, end: endDate });
+          if (!loan.appliedDate) return false;
+          const loanDate = new Date(loan.appliedDate);
+          return loanDate >= startDate && loanDate <= endDate;
         });
       }
 
@@ -833,7 +840,7 @@ export default function LoanVerifier() {
                       <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedLoan.clientPhoto ? (
                           <img 
-                            src={selectedLoan.clientPhoto} 
+                            src={getImageUrl(selectedLoan.clientPhoto)} 
                             alt="Client Photo" 
                             className="max-h-full max-w-full object-contain rounded"
                           />
@@ -849,7 +856,7 @@ export default function LoanVerifier() {
                       <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedLoan.clientAadharFront ? (
                           <img 
-                            src={selectedLoan.clientAadharFront} 
+                            src={getImageUrl(selectedLoan.clientAadharFront)} 
                             alt="Aadhar Front" 
                             className="max-h-full max-w-full object-contain rounded"
                           />
@@ -865,7 +872,7 @@ export default function LoanVerifier() {
                       <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedLoan.clientAadharBack ? (
                           <img 
-                            src={selectedLoan.clientAadharBack} 
+                            src={getImageUrl(selectedLoan.clientAadharBack)} 
                             alt="Aadhar Back" 
                             className="max-h-full max-w-full object-contain rounded"
                           />
@@ -881,7 +888,7 @@ export default function LoanVerifier() {
                       <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedLoan.clientPanFront ? (
                           <img 
-                            src={selectedLoan.clientPanFront} 
+                            src={getImageUrl(selectedLoan.clientPanFront)} 
                             alt="PAN Card" 
                             className="max-h-full max-w-full object-contain rounded"
                           />
@@ -1009,7 +1016,7 @@ export default function LoanVerifier() {
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.photo ? (
                             <img 
-                              src={selectedLoan.guarantor.photo} 
+                              src={getImageUrl(selectedLoan.guarantor.photo)} 
                               alt="Guarantor Photo" 
                               className="max-h-full max-w-full object-contain rounded"
                             />
@@ -1025,7 +1032,7 @@ export default function LoanVerifier() {
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.aadharFront ? (
                             <img 
-                              src={selectedLoan.guarantor.aadharFront} 
+                              src={getImageUrl(selectedLoan.guarantor.aadharFront)} 
                               alt="Guarantor Aadhar Front" 
                               className="max-h-full max-w-full object-contain rounded"
                             />
@@ -1041,7 +1048,7 @@ export default function LoanVerifier() {
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.aadharBack ? (
                             <img 
-                              src={selectedLoan.guarantor.aadharBack} 
+                              src={getImageUrl(selectedLoan.guarantor.aadharBack)} 
                               alt="Guarantor Aadhar Back" 
                               className="max-h-full max-w-full object-contain rounded"
                             />
@@ -1057,7 +1064,7 @@ export default function LoanVerifier() {
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.panFront ? (
                             <img 
-                              src={selectedLoan.guarantor.panFront} 
+                              src={getImageUrl(selectedLoan.guarantor.panFront)} 
                               alt="Guarantor PAN Card" 
                               className="max-h-full max-w-full object-contain rounded"
                             />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'react-toastify'
 import Table from '../../components/ui/Table'
 import Button from '../../components/ui/Button'
@@ -15,8 +15,10 @@ export default function UserManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm()
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm()
 
   useEffect(() => {
     fetchUsers()
@@ -107,6 +109,8 @@ export default function UserManagement() {
     setValue('phoneNumber', user.phoneNumber)
     setValue('role', user.role)
     setValue('status', user.status)
+    setShowPassword(false)
+    setShowConfirmPassword(false)
     setIsModalOpen(true)
   }
 
@@ -129,6 +133,11 @@ export default function UserManagement() {
 
   const onSubmit = async (data) => {
     try {
+      if (!editingUser && data.password !== data.confirmPassword) {
+        toast.error('Password aur Confirm Password match nahi kar rahe!')
+        return
+      }
+      
       setLoading(true)
       const userData = {
         username: data.username,
@@ -186,12 +195,18 @@ export default function UserManagement() {
         onClose={() => {
           setIsModalOpen(false)
           setEditingUser(null)
+          setShowPassword(false)
+          setShowConfirmPassword(false)
           reset()
         }}
         title={editingUser ? 'Edit User' : 'Add New User'}
         footer={
           <>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsModalOpen(false)
+              setShowPassword(false)
+              setShowConfirmPassword(false)
+            }}>
               Cancel
             </Button>
             <Button onClick={handleSubmit(onSubmit)}>
@@ -235,8 +250,51 @@ export default function UserManagement() {
           </div>
           <div>
             <label className="text-sm font-medium">Password {editingUser && '(Leave blank to keep current)'}</label>
-            <Input {...register('password', { required: !editingUser })} type="password" placeholder="Enter password" />
+            <div className="relative">
+              <Input 
+                {...register('password', { 
+                  required: !editingUser,
+                  minLength: {
+                    value: 8,
+                    message: 'Password must be at least 8 characters'
+                  }
+                })} 
+                type={showPassword ? 'text' : 'password'} 
+                placeholder="Enter password" 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
           </div>
+          {!editingUser && (
+            <div>
+              <label className="text-sm font-medium">Confirm Password</label>
+              <div className="relative">
+                <Input 
+                  {...register('confirmPassword', { 
+                    required: 'Confirm password is required',
+                    validate: (value) => value === watch('password') || 'Passwords do not match'
+                  })} 
+                  type={showConfirmPassword ? 'text' : 'password'} 
+                  placeholder="Re-enter password" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword.message}</p>}
+            </div>
+          )}
           <div>
             <label className="text-sm font-medium">Role</label>
             <Select {...register('role', { required: true })}>

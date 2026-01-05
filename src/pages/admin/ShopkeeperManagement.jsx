@@ -11,9 +11,9 @@ import shopkeeperStore from '../../store/shopkeeperStore'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 
 export default function ShopkeeperManagement() {
-  const { shopkeepers, addShopkeeper, updateShopkeeperKYC, deleteShopkeeper, fetchShopkeepers, loading } = shopkeeperStore()
+  const { shopkeepers, addShopkeeper, updateShopkeeper, updateShopkeeperKYC, deleteShopkeeper, fetchShopkeepers, loading } = shopkeeperStore()
   const [localShopkeepers, setLocalShopkeepers] = useState(shopkeepers)
-  
+
   // Fetch shopkeepers from backend on mount
   useEffect(() => {
     fetchShopkeepers()
@@ -76,7 +76,8 @@ export default function ShopkeeperManagement() {
       email: '',
       phone: '',
       gstNumber: '',
-      creditLimit: '',
+
+      tokenBalance: '',
       password: '',
       confirmPassword: ''
     })
@@ -115,15 +116,15 @@ export default function ShopkeeperManagement() {
     try {
       let mediaStream;
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        mediaStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } },
-          audio: false 
+          audio: false
         })
       } catch (err) {
         console.warn('Environment camera failed, trying default camera:', err)
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        mediaStream = await navigator.mediaDevices.getUserMedia({
           video: true,
-          audio: false 
+          audio: false
         })
       }
       setStream(mediaStream)
@@ -148,13 +149,13 @@ export default function ShopkeeperManagement() {
       const ctx = canvas.getContext('2d')
       ctx.drawImage(video, 0, 0)
       const photoData = canvas.toDataURL('image/jpeg')
-      
+
       if (cameraType === 'owner') {
         setOwnerPhoto(photoData)
       } else {
         setShopImage(photoData)
       }
-      
+
       stopCamera()
       toast.success('Photo captured successfully')
     }
@@ -181,9 +182,9 @@ export default function ShopkeeperManagement() {
       cell: ({ row }) => (
         <div className="w-10 h-10 rounded-full overflow-hidden border">
           {row.original.ownerPhoto ? (
-            <img 
-              src={row.original.ownerPhoto} 
-              alt="Owner" 
+            <img
+              src={row.original.ownerPhoto}
+              alt="Owner"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -201,9 +202,9 @@ export default function ShopkeeperManagement() {
       cell: ({ row }) => (
         <div className="w-10 h-10 rounded-lg overflow-hidden border">
           {row.original.shopImage ? (
-            <img 
-              src={row.original.shopImage} 
-              alt="Shop" 
+            <img
+              src={row.original.shopImage}
+              alt="Shop"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -246,8 +247,8 @@ export default function ShopkeeperManagement() {
             <span className="font-mono">
               {isVisible ? row.original.password : '••••••••'}
             </span>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => togglePasswordVisibility(id)}
               className="text-gray-500 hover:text-gray-700"
               title={isVisible ? 'Hide Password' : 'Show Password'}
@@ -272,8 +273,8 @@ export default function ShopkeeperManagement() {
             row.original.kycStatus === 'verified'
               ? 'success'
               : row.original.kycStatus === 'pending'
-              ? 'warning'
-              : 'destructive'
+                ? 'warning'
+                : 'destructive'
           }
         >
           {row.original.kycStatus}
@@ -287,9 +288,9 @@ export default function ShopkeeperManagement() {
       size: 100,
     },
     {
-      accessorKey: 'creditLimit',
-      header: 'Credit Limit',
-      cell: ({ row }) => `₹${row.original.creditLimit?.toLocaleString() || '0'}`,
+      accessorKey: 'tokenBalance',
+      header: 'Token Balance',
+      cell: ({ row }) => `${row.original.tokenBalance || 0} tokens`,
       size: 120,
     },
     {
@@ -369,7 +370,8 @@ export default function ShopkeeperManagement() {
     setValue('email', shopkeeper.email)
     setValue('phone', shopkeeper.phone)
     setValue('gstNumber', shopkeeper.gstNumber || '')
-    setValue('creditLimit', shopkeeper.creditLimit)
+    // creditLimit removed
+    setValue('tokenBalance', shopkeeper.tokenBalance)
     setIsModalOpen(true)
   }
 
@@ -389,9 +391,44 @@ export default function ShopkeeperManagement() {
     const { confirmPassword, ...shopkeeperData } = data
 
     if (editingShopkeeper) {
-      // Update existing shopkeeper - for now we'll just show success
-      // In a real app, you'd have an update method in the store
-      toast.success('Shopkeeper updated successfully')
+      // Update existing shopkeeper
+      const updatedData = {
+        shopName: data.name,
+        ownerName: data.owner,
+        phoneNumber: data.phone,
+        email: data.email,
+        aadharNumber: data.aadharNumber || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        pincode: data.pincode || '',
+        gstNumber: data.gstNumber || '',
+        panNumber: data.panNumber || '',
+        tokenBalance: data.tokenBalance, // Ensure token balance is updated
+        ownerPhoto: ownerPhoto || editingShopkeeper.ownerPhoto,
+        shopImage: shopImage || editingShopkeeper.shopImage,
+      }
+
+      // Only include password if changed
+      if (data.password) {
+        updatedData.password = data.password
+      }
+
+      updateShopkeeper(editingShopkeeper.id || editingShopkeeper._id, updatedData)
+        .then(() => {
+          toast.success('Shopkeeper updated successfully')
+          fetchShopkeepers()
+          setIsModalOpen(false)
+          setEditingShopkeeper(null)
+          setOwnerPhoto(null)
+          setShopImage(null)
+          reset()
+        })
+        .catch((error) => {
+          console.error(error)
+          toast.error(error.response?.data?.message || 'Failed to update shopkeeper')
+        })
+      return
     } else {
       // Add new shopkeeper using store method
       const newShopkeeperData = {
@@ -407,12 +444,12 @@ export default function ShopkeeperManagement() {
         gstNumber: data.gstNumber || '',
         panNumber: data.panNumber || '',
         password: data.password,
-        creditLimit: data.creditLimit || 0,
+        tokenBalance: data.tokenBalance || 100, // Default 100 tokens
         ownerPhoto,
         shopImage,
         kycStatus: 'pending',
       }
-      
+
       addShopkeeper(newShopkeeperData)
         .then((result) => {
           const email = result.email || result.shopkeeper?.email || newShopkeeperData.email
@@ -431,7 +468,7 @@ export default function ShopkeeperManagement() {
         })
       return
     }
-    
+
     // Reset form and close modal
     setIsModalOpen(false)
     setEditingShopkeeper(null)
@@ -449,9 +486,9 @@ export default function ShopkeeperManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Shopkeeper Management</h1>
-          <p className="text-muted-foreground">Manage merchant accounts and credit limits</p>
+          <p className="text-muted-foreground">Manage merchant accounts and token credits</p>
         </div>
-        
+
         <div className="relative w-64">
           {searchTerm && (
             <button type="button"
@@ -517,131 +554,133 @@ export default function ShopkeeperManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Shop Name <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('name', { required: 'Shop name is required' })} 
-                placeholder="Enter shop name" 
+              <Input
+                {...register('name', { required: 'Shop name is required' })}
+                placeholder="Enter shop name"
               />
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">Owner Name <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('owner', { required: 'Owner name is required' })} 
-                placeholder="Enter owner name" 
+              <Input
+                {...register('owner', { required: 'Owner name is required' })}
+                placeholder="Enter owner name"
               />
               {errors.owner && <p className="text-red-500 text-xs mt-1">{errors.owner.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">Aadhar Number <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('aadharNumber', { 
+              <Input
+                {...register('aadharNumber', {
                   required: 'Aadhar number is required',
                   pattern: {
                     value: /^[0-9]{12}$/,
                     message: 'Invalid Aadhar number (12 digits required)'
                   }
-                })} 
-                placeholder="Enter 12-digit Aadhar number" 
+                })}
+                placeholder="Enter 12-digit Aadhar number"
               />
               {errors.aadharNumber && <p className="text-red-500 text-xs mt-1">{errors.aadharNumber.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">Address <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('address', { required: 'Address is required' })} 
-                placeholder="Enter shop address" 
+              <Input
+                {...register('address', { required: 'Address is required' })}
+                placeholder="Enter shop address"
               />
               {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">City <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('city', { required: 'City is required' })} 
-                placeholder="Enter city" 
+              <Input
+                {...register('city', { required: 'City is required' })}
+                placeholder="Enter city"
               />
               {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">State <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('state', { required: 'State is required' })} 
-                placeholder="Enter state" 
+              <Input
+                {...register('state', { required: 'State is required' })}
+                placeholder="Enter state"
               />
               {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">Pincode <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('pincode', { 
+              <Input
+                {...register('pincode', {
                   required: 'Pincode is required',
                   pattern: {
                     value: /^[0-9]{6}$/,
                     message: 'Invalid pincode (6 digits required)'
                   }
-                })} 
-                placeholder="Enter 6-digit pincode" 
+                })}
+                placeholder="Enter 6-digit pincode"
               />
               {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">PAN Number (Optional)</label>
-              <Input 
-                {...register('panNumber')} 
-                placeholder="Enter PAN number" 
+              <Input
+                {...register('panNumber')}
+                placeholder="Enter PAN number"
               />
             </div>
             <div>
               <label className="text-sm font-medium">GST Number (Optional)</label>
-              <Input 
-                {...register('gstNumber')} 
-                placeholder="Enter GST number" 
+              <Input
+                {...register('gstNumber')}
+                placeholder="Enter GST number"
               />
             </div>
             <div>
               <label className="text-sm font-medium">Email <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('email', { 
+              <Input
+                {...register('email', {
                   required: 'Email is required',
                   pattern: {
                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                     message: 'Invalid email address'
                   }
-                })} 
-                type="email" 
-                placeholder="Enter email" 
+                })}
+                type="email"
+                placeholder="Enter email"
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">Phone <span className="text-red-500">*</span></label>
-              <Input 
-                {...register('phone', { 
+              <Input
+                {...register('phone', {
                   required: 'Phone number is required',
                   pattern: {
                     value: /^[0-9]{10}$/,
                     message: 'Invalid phone number (10 digits required)'
                   }
-                })} 
-                placeholder="Enter phone number" 
+                })}
+                placeholder="Enter phone number"
               />
               {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
             </div>
+
             <div>
-              <label className="text-sm font-medium">Credit Limit <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium">Token Balance <span className="text-red-500">*</span></label>
               <Input
-                {...register('creditLimit', { 
-                  required: 'Credit limit is required',
-                  min: { value: 0, message: 'Credit limit cannot be negative' }
+                {...register('tokenBalance', {
+                  required: 'Token balance is required',
+                  min: { value: 0, message: 'Token balance cannot be negative' }
                 })}
                 type="number"
-                placeholder="Enter credit limit"
+                placeholder="Enter token balance (default: 100)"
               />
-              {errors.creditLimit && <p className="text-red-500 text-xs mt-1">{errors.creditLimit.message}</p>}
+              {errors.tokenBalance && <p className="text-red-500 text-xs mt-1">{errors.tokenBalance.message}</p>}
+              <p className="text-xs text-gray-500 mt-1">Each loan application consumes 1 token</p>
             </div>
             <div>
               <label className="text-sm font-medium">Create Password <span className="text-red-500">*</span></label>
               <Input
-                {...register('password', { 
+                {...register('password', {
                   required: 'Password is required',
                   minLength: { value: 6, message: 'Password must be at least 6 characters' }
                 })}
@@ -653,7 +692,7 @@ export default function ShopkeeperManagement() {
             <div>
               <label className="text-sm font-medium">Confirm Password <span className="text-red-500">*</span></label>
               <Input
-                {...register('confirmPassword', { 
+                {...register('confirmPassword', {
                   required: 'Please confirm your password',
                   validate: value => value === password || 'Passwords do not match'
                 })}
@@ -663,7 +702,7 @@ export default function ShopkeeperManagement() {
               {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
             </div>
           </div>
-          
+
           <div className="space-y-6">
             {/* Owner Photo Section */}
             <div className="space-y-4">
@@ -673,12 +712,12 @@ export default function ShopkeeperManagement() {
                   <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
                     {ownerPhoto ? (
                       <>
-                        <img 
-                          src={ownerPhoto} 
-                          alt="Owner" 
+                        <img
+                          src={ownerPhoto}
+                          alt="Owner"
                           className="w-full h-full object-cover"
                         />
-                        <button 
+                        <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
@@ -700,9 +739,9 @@ export default function ShopkeeperManagement() {
 
                 <div className="flex-1 space-y-2">
                   <div className="flex flex-wrap gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
                       onClick={() => ownerFileInputRef.current?.click()}
@@ -710,9 +749,9 @@ export default function ShopkeeperManagement() {
                       <ImageIcon className="w-4 h-4" />
                       <span>Upload Photo</span>
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
                       onClick={() => openCamera('owner')}
@@ -743,12 +782,12 @@ export default function ShopkeeperManagement() {
                   <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
                     {shopImage ? (
                       <>
-                        <img 
-                          src={shopImage} 
-                          alt="Shop" 
+                        <img
+                          src={shopImage}
+                          alt="Shop"
                           className="w-full h-full object-cover"
                         />
-                        <button 
+                        <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
@@ -770,9 +809,9 @@ export default function ShopkeeperManagement() {
 
                 <div className="flex-1 space-y-2">
                   <div className="flex flex-wrap gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
                       onClick={() => shopFileInputRef.current?.click()}
@@ -780,9 +819,9 @@ export default function ShopkeeperManagement() {
                       <ImageIcon className="w-4 h-4" />
                       <span>Upload Image</span>
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
                       onClick={() => openCamera('shop')}
@@ -822,8 +861,8 @@ export default function ShopkeeperManagement() {
               <div className="flex flex-col gap-4">
                 <div className="w-32 h-32 rounded-lg border overflow-hidden">
                   {viewingShopkeeper.ownerPhoto ? (
-                    <img 
-                      src={viewingShopkeeper.ownerPhoto} 
+                    <img
+                      src={viewingShopkeeper.ownerPhoto}
                       alt={viewingShopkeeper.owner}
                       className="w-full h-full object-cover"
                     />
@@ -840,8 +879,8 @@ export default function ShopkeeperManagement() {
               <div className="flex flex-col gap-4">
                 <div className="w-32 h-32 rounded-lg border overflow-hidden">
                   {viewingShopkeeper.shopImage ? (
-                    <img 
-                      src={viewingShopkeeper.shopImage} 
+                    <img
+                      src={viewingShopkeeper.shopImage}
                       alt={`${viewingShopkeeper.name} Shop`}
                       className="w-full h-full object-cover"
                     />
@@ -883,11 +922,11 @@ export default function ShopkeeperManagement() {
                   <p className="text-sm text-muted-foreground">KYC Status</p>
                   <Badge
                     variant={
-                      viewingShopkeeper.kycStatus === 'verified' 
-                        ? 'success' 
+                      viewingShopkeeper.kycStatus === 'verified'
+                        ? 'success'
                         : viewingShopkeeper.kycStatus === 'pending'
-                        ? 'warning'
-                        : 'destructive'
+                          ? 'warning'
+                          : 'destructive'
                     }
                   >
                     {viewingShopkeeper.kycStatus}
@@ -921,14 +960,14 @@ export default function ShopkeeperManagement() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Credit Limit</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Token Balance</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold">
-                    ₹{(viewingShopkeeper.creditLimit || 0).toLocaleString()}
+                    {viewingShopkeeper.tokenBalance || 0}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Available: ₹{((viewingShopkeeper.availableCredit || 0) - (viewingShopkeeper.creditLimit || 0)).toLocaleString()}
+                    Available Tokens
                   </p>
                 </CardContent>
               </Card>
@@ -936,16 +975,16 @@ export default function ShopkeeperManagement() {
 
             {viewingShopkeeper.kycStatus === 'pending' && (
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => handleKYCAction(viewingShopkeeper.id, 'verified')}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Approve KYC
                 </Button>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   size="sm"
                   onClick={() => handleKYCAction(viewingShopkeeper.id, 'rejected')}
                 >
@@ -968,11 +1007,11 @@ export default function ShopkeeperManagement() {
             >
               <X className="h-4 w-4 md:h-5 md:w-5" />
             </button>
-            
+
             <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-900">
               {cameraType === 'owner' ? 'Capture Owner Photo' : 'Capture Shop Image'}
             </h3>
-            
+
             <div className="relative">
               <video
                 ref={videoRef}
@@ -983,7 +1022,7 @@ export default function ShopkeeperManagement() {
               />
               <canvas ref={canvasRef} className="hidden" />
             </div>
-            
+
             <div className="mt-3 md:mt-4 flex justify-center">
               <Button
                 onClick={capturePhoto}

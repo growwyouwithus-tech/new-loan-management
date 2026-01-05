@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
-import { 
-  LayoutDashboard, Users, Store, UserCheck, FileText, Shield, 
-  CreditCard, AlertCircle, Bell, FileBarChart, 
-  Activity, DollarSign, Settings 
+import {
+  LayoutDashboard, Users, Store, UserCheck, FileText, Shield,
+  CreditCard, AlertCircle, Bell, FileBarChart,
+  Activity, DollarSign, Settings
 } from 'lucide-react'
 import Header from '../components/common/Header'
 import Sidebar from '../components/common/Sidebar'
@@ -19,6 +19,8 @@ const sidebarItems = [
   { path: '/admin/penalties', label: 'Penalties', icon: AlertCircle },
   { path: '/admin/notifications', label: 'Notifications', icon: Bell },
   { path: '/admin/reports', label: 'Reports', icon: FileBarChart },
+  { path: '/admin/accounting', label: 'Accounting', icon: Activity },
+  { path: '/admin/recovery', label: 'Recovery', icon: AlertCircle },
   { path: '/admin/emi-management', label: 'EMI Management', icon: DollarSign },
   { path: '/admin/configuration', label: 'Configuration', icon: Settings },
 ]
@@ -53,8 +55,8 @@ export default function AdminLayout() {
       )}
 
       {/* Sidebar */}
-      <Sidebar 
-        items={sidebarItems} 
+      <Sidebar
+        items={sidebarItems}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />

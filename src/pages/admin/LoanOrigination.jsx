@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Plus, Eye, CheckCircle, XCircle, Clock, User, Calendar, CreditCard, ArrowRight, FileText } from 'lucide-react'
+import { Plus, Eye, CheckCircle, XCircle, Clock, User, Calendar, CreditCard, ArrowRight, FileText, Filter } from 'lucide-react'
 import { toast } from 'react-toastify'
 import loanStore from '../../store/loanStore'
+import shopkeeperStore from '../../store/shopkeeperStore'
 import { useNavigate } from 'react-router-dom'
 
 // Calculate next EMI due date based on loan date
 const calculateNextEMIDueDate = (loanDateStr) => {
   const loanDate = new Date(loanDateStr)
   const loanDay = loanDate.getDate()
-  
+
   let nextDueDate = new Date(loanDate)
-  
+
   if (loanDay >= 1 && loanDay <= 18) {
     // If loan date is 1-18, next EMI is on 2nd of next month
     nextDueDate.setMonth(nextDueDate.getMonth() + 1)
@@ -20,21 +21,31 @@ const calculateNextEMIDueDate = (loanDateStr) => {
     nextDueDate.setMonth(nextDueDate.getMonth() + 2)
     nextDueDate.setDate(2)
   }
-  
+
   return nextDueDate.toISOString().split('T')[0]
 }
 
 export default function LoanOrigination() {
   const navigate = useNavigate()
   const { loans, verifiedLoans, approveLoan, rejectLoan, setNextDueDate, getStatistics, fetchLoans, loading } = loanStore()
+  const { shopkeepers, fetchShopkeepers } = shopkeeperStore()
   const [selectedLoan, setSelectedLoan] = useState(null)
   const [showApprovalModal, setShowApprovalModal] = useState(false)
-  
+  const [selectedShopkeeper, setSelectedShopkeeper] = useState('all')
+
   useEffect(() => {
     fetchLoans()
+    fetchShopkeepers()
   }, [])
-  
+
   const stats = getStatistics()
+
+  // Filter loans based on selected shopkeeper
+  const filteredVerifiedLoans = selectedShopkeeper === 'all'
+    ? verifiedLoans
+    : verifiedLoans.filter(loan =>
+      (loan.shopkeeperId?._id || loan.shopkeeperId?.id || loan.shopkeeperId) === selectedShopkeeper
+    )
 
   const handleApproveLoan = (loanId) => {
     const success = approveLoan(loanId)
@@ -47,7 +58,7 @@ export default function LoanOrigination() {
         const nextDueDate = calculateNextEMIDueDate(approvalDate)
         setNextDueDate(loanId, nextDueDate)
       }
-      
+
       toast.success('Loan approved successfully and moved to collections!')
       setShowApprovalModal(false)
       setSelectedLoan(null)
@@ -79,10 +90,28 @@ export default function LoanOrigination() {
           <h1 className="text-3xl font-bold">Loan Origination</h1>
           <p className="text-gray-600">Manage verified loan applications for final approval</p>
         </div>
+
+        {/* Shopkeeper Filter */}
+        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border shadow-sm">
+          <Filter className="w-4 h-4 text-gray-500" />
+          <select
+            value={selectedShopkeeper}
+            onChange={(e) => setSelectedShopkeeper(e.target.value)}
+            className="bg-transparent border-none text-sm focus:ring-0 cursor-pointer outline-none"
+          >
+            <option value="all">All Shopkeepers</option>
+            {shopkeepers.map(sk => (
+              <option key={sk.id || sk._id} value={sk.id || sk._id}>
+                {sk.shopName || sk.name} ({sk.fullName || sk.ownerName})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Status Summary */}
       <div className="grid grid-cols-4 gap-4">
+        {/* ... existing summary cards ... */}
         <div className="p-4 bg-white border rounded-lg shadow-sm">
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-blue-500" />
@@ -127,7 +156,7 @@ export default function LoanOrigination() {
           <h3 className="text-lg leading-6 font-medium text-gray-900">Verified Loans Awaiting Approval</h3>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">Review and approve verified loan applications</p>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -141,8 +170,8 @@ export default function LoanOrigination() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {verifiedLoans.length > 0 ? (
-                verifiedLoans.map((loan) => (
+              {filteredVerifiedLoans.length > 0 ? (
+                filteredVerifiedLoans.map((loan) => (
                   <tr key={loan.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{loan.loanId}</div>
@@ -171,11 +200,10 @@ export default function LoanOrigination() {
                       <div className="text-sm text-gray-500">EMI: ₹{loan.emiAmount?.toLocaleString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        loan.kycStatus === 'verified' ? '!bg-green-100 !text-green-800' :
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${loan.kycStatus === 'verified' ? '!bg-green-100 !text-green-800' :
                         loan.kycStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
                         {loan.kycStatus || 'pending'}
                       </span>
                     </td>
@@ -231,7 +259,7 @@ export default function LoanOrigination() {
                 </button>
               </div>
             </div>
-            
+
             <div className="px-6 py-4">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -260,7 +288,7 @@ export default function LoanOrigination() {
                     <p className="font-medium">{selectedLoan.tenure} months</p>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end space-x-3 pt-4 border-t">
                   <button
                     onClick={() => setShowApprovalModal(false)}

@@ -7,7 +7,7 @@ export default function CollectionsDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [searchTerm, setSearchTerm] = useState('');
   const { loans, activeLoans, getPayments, getStatistics } = loanStore();
-  
+
   const allPayments = getPayments();
   const stats = getStatistics();
 
@@ -18,7 +18,7 @@ export default function CollectionsDashboard() {
     const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
     let filteredPayments = allPayments;
-    
+
     switch (selectedPeriod) {
       case 'today':
         filteredPayments = allPayments.filter(p => p.date === today);
@@ -134,7 +134,9 @@ export default function CollectionsDashboard() {
             Overdue Loans ({filteredOverdueLoans.length})
           </h2>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -182,6 +184,44 @@ export default function CollectionsDashboard() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden">
+          {filteredOverdueLoans.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {filteredOverdueLoans.map((loan) => (
+                <div key={loan.id} className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium text-gray-900">{loan.clientName}</div>
+                      <div className="text-sm text-gray-500">{loan.loanId}</div>
+                    </div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Overdue
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-gray-500">EMI:</span>
+                      <span className="ml-1 font-medium">₹{(loan.emiAmount || 0).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Due:</span>
+                      <span className="ml-1 font-medium text-red-600">{loan.nextDueDate}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <a href={`tel:${loan.clientPhone}`} className="text-blue-600 flex items-center gap-1">
+                      <Users className="w-4 h-4" /> Call Client
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-gray-500">No overdue loans found</div>
+          )}
+        </div>
       </div>
 
       {/* Pending Collections Table */}
@@ -192,7 +232,9 @@ export default function CollectionsDashboard() {
             Pending Collections ({filteredPendingLoans.length})
           </h2>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -239,6 +281,44 @@ export default function CollectionsDashboard() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden">
+          {filteredPendingLoans.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {filteredPendingLoans.map((loan) => (
+                <div key={loan.id} className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium text-gray-900">{loan.clientName}</div>
+                      <div className="text-sm text-gray-500">{loan.loanId}</div>
+                    </div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      Pending
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-gray-500">EMI:</span>
+                      <span className="ml-1 font-medium">₹{(loan.emiAmount || 0).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Due:</span>
+                      <span className="ml-1 font-medium">{loan.nextDueDate}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <a href={`tel:${loan.clientPhone}`} className="text-blue-600 flex items-center gap-1">
+                      <Users className="w-4 h-4" /> Call Client
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-gray-500">No pending collections found</div>
+          )}
         </div>
       </div>
     </div>

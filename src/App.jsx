@@ -24,6 +24,8 @@ import EMIManagement from './pages/admin/EMIManagement'
 import Configuration from './pages/admin/Configuration'
 import LoanVerifier from './pages/admin/LoanVerifier'
 import VerifiedLoans from './pages/admin/VerifiedLoans'
+import Accounting from './pages/admin/Accounting'
+import LoanRecovery from './pages/admin/LoanRecovery'
 
 // Shopkeeper Pages
 import ShopkeeperDashboard from './pages/shopkeeper/Dashboard'
@@ -47,95 +49,97 @@ function App() {
   return (
     <>
       <Routes>
-      {/* Public Routes */}
-      <Route 
-        path="/login" 
-        element={!isAuthenticated ? <LoginPage /> : <Navigate to={
-          user?.role === 'shopkeeper' ? '/shopkeeper' : 
-          user?.role === 'collections' ? '/collections' : 
-          user?.role === 'verifier' ? '/verifier' :
-          '/admin'
-        } />} 
-      />
+        {/* Public Routes */}
+        <Route
+          path="/login"
+          element={!isAuthenticated ? <LoginPage /> : <Navigate to={
+            user?.role === 'shopkeeper' ? '/shopkeeper' :
+              user?.role === 'collections' ? '/collections' :
+                user?.role === 'verifier' ? '/verifier' :
+                  '/admin'
+          } />}
+        />
 
-      {/* Admin Routes */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute allowedRoles={['admin', 'credit_manager', 'collections', 'support', 'verifier']}>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="users" element={<UserManagement />} />
-        <Route path="shopkeepers" element={<ShopkeeperManagement />} />
-        <Route path="borrowers" element={<BorrowerManagement />} />
-        <Route path="loans" element={<LoanOrigination />} />
-        <Route path="loans/:id" element={<LoanDetails />} />
-        <Route path="kyc" element={<KYCVerification />} />
-        <Route path="repayments" element={<RepaymentManagement />} />
-        <Route path="penalties" element={<PenaltiesManagement />} />
-        <Route path="notifications" element={<NotificationsManagement />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="emi-management" element={<EMIManagement />} />
-        <Route path="loan-verifier" element={<LoanVerifier />} />
-        <Route path="verified-loans" element={<VerifiedLoans />} />
-        <Route path="configuration" element={<Configuration />} />
-      </Route>
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'credit_manager', 'collections', 'support', 'verifier']}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="shopkeepers" element={<ShopkeeperManagement />} />
+          <Route path="borrowers" element={<BorrowerManagement />} />
+          <Route path="loans" element={<LoanOrigination />} />
+          <Route path="loans/:id" element={<LoanDetails />} />
+          <Route path="kyc" element={<KYCVerification />} />
+          <Route path="repayments" element={<RepaymentManagement />} />
+          <Route path="penalties" element={<PenaltiesManagement />} />
+          <Route path="notifications" element={<NotificationsManagement />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="emi-management" element={<EMIManagement />} />
+          <Route path="loan-verifier" element={<LoanVerifier />} />
+          <Route path="verified-loans" element={<VerifiedLoans />} />
+          <Route path="accounting" element={<Accounting />} />
+          <Route path="recovery" element={<LoanRecovery />} />
+          <Route path="configuration" element={<Configuration />} />
+        </Route>
 
-      {/* Shopkeeper Routes */}
-      <Route
-        path="/shopkeeper"
-        element={
-          <ProtectedRoute allowedRoles={['shopkeeper']}>
-            <ShopkeeperLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<ShopkeeperDashboard />} />
-        <Route path="apply-loan" element={<ApplyLoan />} />
-        <Route path="loans" element={<LoanTracking />} />
-        <Route path="my-loans" element={<LoanTracking />} />
-        <Route path="collect-payment" element={<CollectPayment />} />
-        <Route path="customers" element={<CustomerList />} />
-        <Route path="notifications" element={<ShopkeeperNotifications />} />
-      </Route>
+        {/* Shopkeeper Routes */}
+        <Route
+          path="/shopkeeper"
+          element={
+            <ProtectedRoute allowedRoles={['shopkeeper']}>
+              <ShopkeeperLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ShopkeeperDashboard />} />
+          <Route path="apply-loan" element={<ApplyLoan />} />
+          <Route path="loans" element={<LoanTracking />} />
+          <Route path="my-loans" element={<LoanTracking />} />
+          <Route path="collect-payment" element={<CollectPayment />} />
+          <Route path="customers" element={<CustomerList />} />
+          <Route path="notifications" element={<ShopkeeperNotifications />} />
+        </Route>
 
-      {/* Collections Routes */}
-      <Route
-        path="/collections"
-        element={
-          <ProtectedRoute allowedRoles={['collections', 'admin']}>
-            <CollectionsLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<CollectionsDashboard />} />
-        <Route path="loans" element={<LoanCollection />} />
-      </Route>
+        {/* Collections Routes */}
+        <Route
+          path="/collections"
+          element={
+            <ProtectedRoute allowedRoles={['collections', 'admin']}>
+              <CollectionsLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<CollectionsDashboard />} />
+          <Route path="loans" element={<LoanCollection />} />
+        </Route>
 
-      {/* Verifier Routes */}
-      <Route
-        path="/verifier"
-        element={
-          <ProtectedRoute allowedRoles={['verifier']}>
-            <VerifierLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<VerifierDashboard />} />
-        <Route path="loan-verifier" element={<LoanVerifier />} />
-        <Route path="verified-loans" element={<VerifiedLoans />} />
-        <Route path="notifications" element={<VerifierNotifications />} />
-      </Route>
+        {/* Verifier Routes */}
+        <Route
+          path="/verifier"
+          element={
+            <ProtectedRoute allowedRoles={['verifier']}>
+              <VerifierLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<VerifierDashboard />} />
+          <Route path="loan-verifier" element={<LoanVerifier />} />
+          <Route path="verified-loans" element={<VerifiedLoans />} />
+          <Route path="notifications" element={<VerifierNotifications />} />
+        </Route>
 
-      {/* Make login page the default route */}
-      <Route path="/" element={<LoginPage />} />
-      
-      {/* Redirect any unknown routes to login */}
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+        {/* Make login page the default route */}
+        <Route path="/" element={<LoginPage />} />
+
+        {/* Redirect any unknown routes to login */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
       <PWAInstallPrompt />
     </>
   )

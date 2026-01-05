@@ -16,6 +16,11 @@ export const useAuthStore = create(
           const response = await apiClient.post('/auth/login', credentials)
           const { accessToken, refreshToken, user } = response.data
 
+          // Validate token before storing
+          if (!accessToken || get().isTokenExpired(accessToken)) {
+            throw new Error('Invalid or expired token received')
+          }
+
           set({
             user,
             accessToken,

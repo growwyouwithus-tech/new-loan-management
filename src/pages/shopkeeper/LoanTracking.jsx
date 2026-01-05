@@ -11,6 +11,7 @@ import PrintAgreement from '../../components/PrintAgreement'
 import { Eye, CreditCard, Calendar, DollarSign, Trash2, User, Users, Package, Building, FileText, Search, Printer, Edit } from 'lucide-react'
 import loanStore from '../../store/loanStore'
 import { toast } from 'react-toastify'
+import { getImageUrl } from '../../utils/imageHelper'
 import '../../styles/printStyles.css'
 import '../../styles/loanDetailPrintStyles.css'
 
@@ -563,9 +564,9 @@ export default function LoanTracking() {
                     <div>
                       <label className="text-sm font-medium text-gray-500">Client Photo</label>
                       <div className="mt-2">
-                        {selectedLoan.customerPhoto ? (
+                        {(selectedLoan.customerPhoto || selectedLoan.clientPhoto || selectedLoan.photo) ? (
                           <img 
-                            src={selectedLoan.customerPhoto} 
+                            src={getImageUrl(selectedLoan.customerPhoto || selectedLoan.clientPhoto || selectedLoan.photo)} 
                             alt="Client Photo" 
                             className="w-32 h-32 object-cover rounded-lg border"
                           />
@@ -579,9 +580,9 @@ export default function LoanTracking() {
                     <div>
                       <label className="text-sm font-medium text-gray-500">Aadhaar Card</label>
                       <div className="mt-2">
-                        {selectedLoan.aadhaarFrontImage ? (
+                        {(selectedLoan.aadhaarFrontImage || selectedLoan.clientAadharFront || selectedLoan.aadharFront) ? (
                           <img 
-                            src={selectedLoan.aadhaarFrontImage} 
+                            src={getImageUrl(selectedLoan.aadhaarFrontImage || selectedLoan.clientAadharFront || selectedLoan.aadharFront)} 
                             alt="Aadhaar Front" 
                             className="w-32 h-20 object-cover rounded-lg border"
                           />
@@ -637,33 +638,41 @@ export default function LoanTracking() {
                     <div>
                       <label className="text-sm font-medium text-gray-500">Guarantor Photo</label>
                       <div className="mt-2">
-                        {selectedLoan.guarantorPhoto ? (
+                        {selectedLoan.guarantorPhoto || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack ? (
                           <img 
-                            src={selectedLoan.guarantorPhoto} 
+                            src={getImageUrl(selectedLoan.guarantorPhoto || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack)} 
                             alt="Guarantor Photo" 
                             className="w-32 h-32 object-cover rounded-lg border"
+                            onError={(e) => {
+                              console.log('Image failed to load:', e.target.src);
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
                           />
-                        ) : (
-                          <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <Users className="w-12 h-12 text-gray-400" />
-                          </div>
-                        )}
+                        ) : null}
+                        <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center" style={{display: (selectedLoan.guarantorPhoto || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack) ? 'none' : 'flex'}}>
+                          <Users className="w-12 h-12 text-gray-400" />
+                        </div>
                       </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Guarantor Aadhaar</label>
                       <div className="mt-2">
-                        {selectedLoan.guarantorAadhaarImage ? (
+                        {selectedLoan.guarantorAadhaarImage || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack ? (
                           <img 
-                            src={selectedLoan.guarantorAadhaarImage} 
+                            src={getImageUrl(selectedLoan.guarantorAadhaarImage || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack)} 
                             alt="Guarantor Aadhaar" 
                             className="w-32 h-20 object-cover rounded-lg border"
+                            onError={(e) => {
+                              console.log('Aadhaar image failed to load:', e.target.src);
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
                           />
-                        ) : (
-                          <div className="w-32 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <FileText className="w-8 h-8 text-gray-400" />
-                          </div>
-                        )}
+                        ) : null}
+                        <div className="w-32 h-20 bg-gray-200 rounded-lg flex items-center justify-center" style={{display: (selectedLoan.guarantorAadhaarImage || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack) ? 'none' : 'flex'}}>
+                          <FileText className="w-8 h-8 text-gray-400" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -699,7 +708,7 @@ export default function LoanTracking() {
                     <label className="text-sm font-medium text-gray-500">Product Image</label>
                     <div className="mt-2">
                       <img 
-                        src={selectedLoan.productImage} 
+                        src={getImageUrl(selectedLoan.productImage)} 
                         alt="Product" 
                         className="w-48 h-32 object-cover rounded-lg border"
                       />
@@ -741,7 +750,7 @@ export default function LoanTracking() {
                     <label className="text-sm font-medium text-gray-500">Passbook/Cheque</label>
                     <div className="mt-2">
                       <img 
-                        src={selectedLoan.passbookImage} 
+                        src={getImageUrl(selectedLoan.passbookImage)} 
                         alt="Passbook" 
                         className="w-48 h-32 object-cover rounded-lg border"
                       />

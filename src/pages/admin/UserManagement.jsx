@@ -50,6 +50,11 @@ export default function UserManagement() {
     {
       accessorKey: 'id',
       header: 'ID',
+      cell: ({ row }) => (
+        <span className="font-mono text-sm font-medium text-blue-600">
+          {row.original.id.slice(-4).toUpperCase()}
+        </span>
+      ),
     },
     {
       accessorKey: 'name',
@@ -137,7 +142,7 @@ export default function UserManagement() {
         toast.error('Password aur Confirm Password match nahi kar rahe!')
         return
       }
-      
+
       setLoading(true)
       const userData = {
         username: data.username,
@@ -156,7 +161,7 @@ export default function UserManagement() {
         await userService.createUser(userData)
         toast.success('User created successfully')
       }
-      
+
       setIsModalOpen(false)
       setEditingUser(null)
       reset()
@@ -230,8 +235,8 @@ export default function UserManagement() {
           </div>
           <div>
             <label className="text-sm font-medium">Phone Number</label>
-            <Input 
-              {...register('phoneNumber', { 
+            <Input
+              {...register('phoneNumber', {
                 required: 'Phone number is required',
                 pattern: {
                   value: /^[0-9]{10}$/,
@@ -241,7 +246,7 @@ export default function UserManagement() {
                   value: 10,
                   message: 'Phone number must be 10 digits'
                 }
-              })} 
+              })}
               placeholder="Enter 10 digit phone number"
               maxLength={10}
               type="tel"
@@ -251,16 +256,16 @@ export default function UserManagement() {
           <div>
             <label className="text-sm font-medium">Password {editingUser && '(Leave blank to keep current)'}</label>
             <div className="relative">
-              <Input 
-                {...register('password', { 
+              <Input
+                {...register('password', {
                   required: !editingUser,
                   minLength: {
                     value: 8,
                     message: 'Password must be at least 8 characters'
                   }
-                })} 
-                type={showPassword ? 'text' : 'password'} 
-                placeholder="Enter password" 
+                })}
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter password"
               />
               <button
                 type="button"
@@ -276,13 +281,13 @@ export default function UserManagement() {
             <div>
               <label className="text-sm font-medium">Confirm Password</label>
               <div className="relative">
-                <Input 
-                  {...register('confirmPassword', { 
+                <Input
+                  {...register('confirmPassword', {
                     required: 'Confirm password is required',
                     validate: (value) => value === watch('password') || 'Passwords do not match'
-                  })} 
-                  type={showConfirmPassword ? 'text' : 'password'} 
-                  placeholder="Re-enter password" 
+                  })}
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Re-enter password"
                 />
                 <button
                   type="button"

@@ -19,9 +19,9 @@ import '../../styles/loanDetailPrintStyles.css'
 const calculateNextEMIDueDate = (loanDateStr) => {
   const loanDate = new Date(loanDateStr)
   const loanDay = loanDate.getDate()
-  
+
   let nextDueDate = new Date(loanDate)
-  
+
   if (loanDay >= 1 && loanDay <= 18) {
     // If loan date is 1-18, next EMI is on 2nd of next month
     nextDueDate.setMonth(nextDueDate.getMonth() + 1)
@@ -31,7 +31,7 @@ const calculateNextEMIDueDate = (loanDateStr) => {
     nextDueDate.setMonth(nextDueDate.getMonth() + 2)
     nextDueDate.setDate(2)
   }
-  
+
   return nextDueDate.toISOString().split('T')[0]
 }
 
@@ -39,9 +39,9 @@ const calculateNextEMIDueDate = (loanDateStr) => {
 const calculateEMIDueDate = (baseDateStr, emiNumber) => {
   const baseDate = new Date(baseDateStr)
   const baseDateDay = baseDate.getDate()
-  
+
   let firstEMIDueDate = new Date(baseDate)
-  
+
   if (baseDateDay >= 1 && baseDateDay <= 18) {
     // If loan date is 1-18, first EMI is on 2nd of next month
     firstEMIDueDate.setMonth(firstEMIDueDate.getMonth() + 1)
@@ -51,11 +51,11 @@ const calculateEMIDueDate = (baseDateStr, emiNumber) => {
     firstEMIDueDate.setMonth(firstEMIDueDate.getMonth() + 2)
     firstEMIDueDate.setDate(2)
   }
-  
+
   // Calculate subsequent EMI dates by adding months
   const dueDate = new Date(firstEMIDueDate)
   dueDate.setMonth(dueDate.getMonth() + (emiNumber - 1))
-  
+
   return dueDate.toISOString().split('T')[0]
 }
 
@@ -76,7 +76,7 @@ export default function LoanTracking() {
     const interval = setInterval(() => {
       fetchLoans(); // Auto-refresh every 10 seconds
     }, 10000);
-    
+
     return () => clearInterval(interval); // Cleanup on unmount
   }, [fetchLoans]);
 
@@ -106,7 +106,7 @@ export default function LoanTracking() {
     if (!searchTerm) {
       setFilteredLoans(loans);
     } else {
-      const filtered = loans.filter(loan => 
+      const filtered = loans.filter(loan =>
         loan.loanId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         loan.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         loan.clientPhone?.includes(searchTerm) ||
@@ -179,8 +179,8 @@ export default function LoanTracking() {
   };
 
   const columns = [
-    { 
-      accessorKey: 'loanId', 
+    {
+      accessorKey: 'loanId',
       header: 'Loan ID',
       cell: ({ row }) => row.original.loanId || `LN${String(row.original.id).slice(-6)}`
     },
@@ -197,13 +197,13 @@ export default function LoanTracking() {
         );
       },
     },
-    { 
-      accessorKey: 'clientName', 
+    {
+      accessorKey: 'clientName',
       header: 'Client Name',
       cell: ({ row }) => row.original.clientName || 'N/A'
     },
-    { 
-      accessorKey: 'productName', 
+    {
+      accessorKey: 'productName',
       header: 'Product',
       cell: ({ row }) => row.original.productName || 'N/A'
     },
@@ -221,10 +221,10 @@ export default function LoanTracking() {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
-        const colors = { 
-          Pending: 'warning', 
-          Verified: 'info', 
-          Approved: 'success', 
+        const colors = {
+          Pending: 'warning',
+          Verified: 'info',
+          Approved: 'success',
           Active: 'success',
           Rejected: 'destructive',
           Overdue: 'destructive',
@@ -312,11 +312,10 @@ export default function LoanTracking() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-xl shadow-lg ${
-                      loan.status === 'active' ? 'bg-gradient-to-br from-green-500 to-green-600' :
-                      loan.status === 'overdue' ? 'bg-gradient-to-br from-red-500 to-red-600' :
-                      'bg-gradient-to-br from-yellow-500 to-yellow-600'
-                    }`}>
+                    <div className={`p-3 rounded-xl shadow-lg ${loan.status === 'active' ? 'bg-gradient-to-br from-green-500 to-green-600' :
+                        loan.status === 'overdue' ? 'bg-gradient-to-br from-red-500 to-red-600' :
+                          'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                      }`}>
                       <CreditCard className="h-5 w-5 text-white" />
                     </div>
                     <div>
@@ -326,8 +325,8 @@ export default function LoanTracking() {
                   </div>
                   <Badge variant={
                     loan.status === 'Active' || loan.status === 'Approved' || loan.status === 'Paid' ? 'success' :
-                    loan.status === 'Overdue' || loan.status === 'Rejected' ? 'destructive' : 
-                    loan.status === 'Verified' ? 'info' : 'warning'
+                      loan.status === 'Overdue' || loan.status === 'Rejected' ? 'destructive' :
+                        loan.status === 'Verified' ? 'info' : 'warning'
                   }>
                     {loan.status || 'Pending'}
                   </Badge>
@@ -358,27 +357,27 @@ export default function LoanTracking() {
                   )}
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     className="flex-1"
                     onClick={() => handleViewDetails(loan)}
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     View
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     className="flex-1"
                     onClick={() => handleEditLoan(loan)}
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
+                  <Button
+                    size="sm"
+                    variant="destructive"
                     onClick={() => handleDeleteLoan(loan.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -450,37 +449,36 @@ export default function LoanTracking() {
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
                             {paymentData.schedule.map((row) => {
-                                const d = new Date(row.dueDate);
-                                let dateLabel = 'N/A';
-                                if (!isNaN(d.getTime())) {
-                                  dateLabel = d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
-                                }
-                                return (
-                                  <tr key={row.emiNumber}>
-                                    <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-100">{row.emiNumber}</td>
-                                    <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-100">{dateLabel}</td>
-                                    <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-100">₹{Number(row.amount || 0).toLocaleString()}</td>
-                                    <td className="px-4 py-2 text-sm border-b border-gray-100">
-                                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                        row.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              const d = new Date(row.dueDate);
+                              let dateLabel = 'N/A';
+                              if (!isNaN(d.getTime())) {
+                                dateLabel = d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+                              }
+                              return (
+                                <tr key={row.emiNumber}>
+                                  <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-100">{row.emiNumber}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-100">{dateLabel}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-900 border-b border-gray-100">₹{Number(row.amount || 0).toLocaleString()}</td>
+                                  <td className="px-4 py-2 text-sm border-b border-gray-100">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${row.isPaid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                                       }`}>
-                                        {row.isPaid ? 'Paid' : 'Pending'}
-                                      </span>
-                                    </td>
-                                    <td className="px-4 py-2 text-sm border-b border-gray-100 no-print">
-                                      {!row.isPaid && (
-                                        <Button
-                                          size="sm"
-                                          className="!bg-green-500 !hover:bg-green-600 !text-white"
-                                          onClick={() => handlePayNow(selectedLoan)}
-                                        >
-                                          Pay Now
-                                        </Button>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
+                                      {row.isPaid ? 'Paid' : 'Pending'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-sm border-b border-gray-100 no-print">
+                                    {!row.isPaid && (
+                                      <Button
+                                        size="sm"
+                                        className="!bg-green-500 !hover:bg-green-600 !text-white"
+                                        onClick={() => handlePayNow(selectedLoan)}
+                                      >
+                                        Pay Now
+                                      </Button>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -560,35 +558,72 @@ export default function LoanTracking() {
                       <p className="font-semibold">{selectedLoan.customerPan || 'N/A'}</p>
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Client Photo</label>
-                      <div className="mt-2">
+                  <div className="md:col-span-2">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6 border-t pt-4">
+                      {/* Client Photo */}
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 block mb-2">Client Photo</label>
                         {(selectedLoan.customerPhoto || selectedLoan.clientPhoto || selectedLoan.photo) ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.customerPhoto || selectedLoan.clientPhoto || selectedLoan.photo)} 
-                            alt="Client Photo" 
-                            className="w-32 h-32 object-cover rounded-lg border"
+                          <img
+                            src={getImageUrl(selectedLoan.customerPhoto || selectedLoan.clientPhoto || selectedLoan.photo)}
+                            alt="Client Photo"
+                            className="w-full h-32 object-cover rounded-lg border hover:scale-105 transition-transform cursor-pointer"
+                            title="Client Photo"
                           />
                         ) : (
-                          <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <User className="w-12 h-12 text-gray-400" />
+                          <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center border border-dashed border-gray-400">
+                            <User className="w-8 h-8 text-gray-400" />
                           </div>
                         )}
                       </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Aadhaar Card</label>
-                      <div className="mt-2">
+
+                      {/* Aadhar Front */}
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 block mb-2">Aadhaar Front</label>
                         {(selectedLoan.aadhaarFrontImage || selectedLoan.clientAadharFront || selectedLoan.aadharFront) ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.aadhaarFrontImage || selectedLoan.clientAadharFront || selectedLoan.aadharFront)} 
-                            alt="Aadhaar Front" 
-                            className="w-32 h-20 object-cover rounded-lg border"
+                          <img
+                            src={getImageUrl(selectedLoan.aadhaarFrontImage || selectedLoan.clientAadharFront || selectedLoan.aadharFront)}
+                            alt="Aadhaar Front"
+                            className="w-full h-32 object-cover rounded-lg border hover:scale-105 transition-transform cursor-pointer"
+                            title="Aadhaar Front"
                           />
                         ) : (
-                          <div className="w-32 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center border border-dashed border-gray-400">
                             <FileText className="w-8 h-8 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Aadhar Back */}
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 block mb-2">Aadhaar Back</label>
+                        {(selectedLoan.aadhaarBackImage || selectedLoan.clientAadharBack || selectedLoan.aadharBack) ? (
+                          <img
+                            src={getImageUrl(selectedLoan.aadhaarBackImage || selectedLoan.clientAadharBack || selectedLoan.aadharBack)}
+                            alt="Aadhaar Back"
+                            className="w-full h-32 object-cover rounded-lg border hover:scale-105 transition-transform cursor-pointer"
+                            title="Aadhaar Back"
+                          />
+                        ) : (
+                          <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center border border-dashed border-gray-400">
+                            <FileText className="w-8 h-8 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* PAN Card */}
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 block mb-2">PAN Card</label>
+                        {(selectedLoan.panCardImage || selectedLoan.clientPanImage || selectedLoan.panImage) ? (
+                          <img
+                            src={getImageUrl(selectedLoan.panCardImage || selectedLoan.clientPanImage || selectedLoan.panImage)}
+                            alt="PAN Card"
+                            className="w-full h-32 object-cover rounded-lg border hover:scale-105 transition-transform cursor-pointer"
+                            title="PAN Card"
+                          />
+                        ) : (
+                          <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center border border-dashed border-gray-400">
+                            <CreditCard className="w-8 h-8 text-gray-400" />
                           </div>
                         )}
                       </div>
@@ -639,9 +674,9 @@ export default function LoanTracking() {
                       <label className="text-sm font-medium text-gray-500">Guarantor Photo</label>
                       <div className="mt-2">
                         {selectedLoan.guarantorPhoto || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.guarantorPhoto || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack)} 
-                            alt="Guarantor Photo" 
+                          <img
+                            src={getImageUrl(selectedLoan.guarantorPhoto || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack)}
+                            alt="Guarantor Photo"
                             className="w-32 h-32 object-cover rounded-lg border"
                             onError={(e) => {
                               console.log('Image failed to load:', e.target.src);
@@ -650,7 +685,7 @@ export default function LoanTracking() {
                             }}
                           />
                         ) : null}
-                        <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center" style={{display: (selectedLoan.guarantorPhoto || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack) ? 'none' : 'flex'}}>
+                        <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center" style={{ display: (selectedLoan.guarantorPhoto || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack) ? 'none' : 'flex' }}>
                           <Users className="w-12 h-12 text-gray-400" />
                         </div>
                       </div>
@@ -659,9 +694,9 @@ export default function LoanTracking() {
                       <label className="text-sm font-medium text-gray-500">Guarantor Aadhaar</label>
                       <div className="mt-2">
                         {selectedLoan.guarantorAadhaarImage || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.guarantorAadhaarImage || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack)} 
-                            alt="Guarantor Aadhaar" 
+                          <img
+                            src={getImageUrl(selectedLoan.guarantorAadhaarImage || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack)}
+                            alt="Guarantor Aadhaar"
                             className="w-32 h-20 object-cover rounded-lg border"
                             onError={(e) => {
                               console.log('Aadhaar image failed to load:', e.target.src);
@@ -670,7 +705,7 @@ export default function LoanTracking() {
                             }}
                           />
                         ) : null}
-                        <div className="w-32 h-20 bg-gray-200 rounded-lg flex items-center justify-center" style={{display: (selectedLoan.guarantorAadhaarImage || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack) ? 'none' : 'flex'}}>
+                        <div className="w-32 h-20 bg-gray-200 rounded-lg flex items-center justify-center" style={{ display: (selectedLoan.guarantorAadhaarImage || selectedLoan.guarantorAadharFront || selectedLoan.guarantorAadharBack) ? 'none' : 'flex' }}>
                           <FileText className="w-8 h-8 text-gray-400" />
                         </div>
                       </div>
@@ -707,9 +742,9 @@ export default function LoanTracking() {
                   <div className="mt-4">
                     <label className="text-sm font-medium text-gray-500">Product Image</label>
                     <div className="mt-2">
-                      <img 
-                        src={getImageUrl(selectedLoan.productImage)} 
-                        alt="Product" 
+                      <img
+                        src={getImageUrl(selectedLoan.productImage)}
+                        alt="Product"
                         className="w-48 h-32 object-cover rounded-lg border"
                       />
                     </div>
@@ -749,9 +784,9 @@ export default function LoanTracking() {
                   <div className="mt-4">
                     <label className="text-sm font-medium text-gray-500">Passbook/Cheque</label>
                     <div className="mt-2">
-                      <img 
-                        src={getImageUrl(selectedLoan.passbookImage)} 
-                        alt="Passbook" 
+                      <img
+                        src={getImageUrl(selectedLoan.passbookImage)}
+                        alt="Passbook"
                         className="w-48 h-32 object-cover rounded-lg border"
                       />
                     </div>
@@ -770,12 +805,11 @@ export default function LoanTracking() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className={`p-4 rounded-lg border-l-4 ${
-                    selectedLoan.status === 'Rejected' ? 'bg-red-50 border-red-500' :
-                    selectedLoan.status === 'Verified' ? 'bg-blue-50 border-blue-500' :
-                    selectedLoan.status === 'Approved' ? 'bg-green-50 border-green-500' :
-                    'bg-yellow-50 border-yellow-500'
-                  }`}>
+                  <div className={`p-4 rounded-lg border-l-4 ${selectedLoan.status === 'Rejected' ? 'bg-red-50 border-red-500' :
+                      selectedLoan.status === 'Verified' ? 'bg-blue-50 border-blue-500' :
+                        selectedLoan.status === 'Approved' ? 'bg-green-50 border-green-500' :
+                          'bg-yellow-50 border-yellow-500'
+                    }`}>
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
                         {selectedLoan.status === 'Rejected' ? (
@@ -797,23 +831,21 @@ export default function LoanTracking() {
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className={`text-sm font-semibold mb-2 ${
-                          selectedLoan.status === 'Rejected' ? 'text-red-900' :
-                          selectedLoan.status === 'Verified' ? 'text-blue-900' :
-                          selectedLoan.status === 'Approved' ? 'text-green-900' :
-                          'text-yellow-900'
-                        }`}>
+                        <p className={`text-sm font-semibold mb-2 ${selectedLoan.status === 'Rejected' ? 'text-red-900' :
+                            selectedLoan.status === 'Verified' ? 'text-blue-900' :
+                              selectedLoan.status === 'Approved' ? 'text-green-900' :
+                                'text-yellow-900'
+                          }`}>
                           {selectedLoan.status === 'Rejected' ? 'Rejection Reason:' :
-                           selectedLoan.status === 'Verified' ? 'Verification Note:' :
-                           selectedLoan.status === 'Approved' ? 'Approval Note:' :
-                           'Status Comment:'}
+                            selectedLoan.status === 'Verified' ? 'Verification Note:' :
+                              selectedLoan.status === 'Approved' ? 'Approval Note:' :
+                                'Status Comment:'}
                         </p>
-                        <p className={`text-sm ${
-                          selectedLoan.status === 'Rejected' ? 'text-red-800' :
-                          selectedLoan.status === 'Verified' ? 'text-blue-800' :
-                          selectedLoan.status === 'Approved' ? 'text-green-800' :
-                          'text-yellow-800'
-                        }`}>
+                        <p className={`text-sm ${selectedLoan.status === 'Rejected' ? 'text-red-800' :
+                            selectedLoan.status === 'Verified' ? 'text-blue-800' :
+                              selectedLoan.status === 'Approved' ? 'text-green-800' :
+                                'text-yellow-800'
+                          }`}>
                           {selectedLoan.statusComment || selectedLoan.verifierComment || selectedLoan.adminComment}
                         </p>
                         {selectedLoan.commentDate && (

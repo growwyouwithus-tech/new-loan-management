@@ -31,10 +31,12 @@ export default function BorrowerManagement() {
           id: loan.id,
           name: loan.clientName,
           fatherName: loan.clientFatherOrSpouseName,
-          phone: loan.clientMobile,
-          email: loan.clientEmail,
+          phone: loan.clientPhone || loan.clientMobile || 'N/A',
+          email: loan.clientEmail || loan.customerEmail || 'N/A',
           address: loan.clientAddress ?
-            `${loan.clientAddress.houseNo}, ${loan.clientAddress.galiNo}, ${loan.clientAddress.colony}, ${loan.clientAddress.area}, ${loan.clientAddress.city} - ${loan.clientAddress.pincode}, ${loan.clientAddress.state}`
+            (typeof loan.clientAddress === 'string'
+              ? loan.clientAddress
+              : `${loan.clientAddress.houseNo || ''}, ${loan.clientAddress.galiNo || ''}, ${loan.clientAddress.colony || ''}, ${loan.clientAddress.area || ''}, ${loan.clientAddress.city || ''} - ${loan.clientAddress.pincode || ''}, ${loan.clientAddress.state || ''}`)
             : 'Address not available',
           aadharNumber: loan.clientAadharNumber,
           panNumber: loan.clientPanNumber,
@@ -90,7 +92,34 @@ export default function BorrowerManagement() {
 
     const matchesKYC = kycFilter === 'all' || borrower.kycStatus === kycFilter
 
-    const matchesShopkeeper = shopkeeperFilter === 'all' || borrower.shopkeeperId === shopkeeperFilter
+    // Fix shopkeeper filter comparison with detailed logging
+    let matchesShopkeeper = true
+    if (shopkeeperFilter !== 'all') {
+      const borrowerShopkeeperId = borrower.shopkeeperId
+
+      // Debug logging
+      if (borrowers.indexOf(borrower) === 0) {
+        console.log('=== Shopkeeper Filter Debug ===')
+        console.log('Selected Filter ID:', shopkeeperFilter, typeof shopkeeperFilter)
+        console.log('Borrower Shopkeeper ID:', borrowerShopkeeperId, typeof borrowerShopkeeperId)
+        console.log('Borrower Name:', borrower.name)
+      }
+
+      if (!borrowerShopkeeperId) {
+        matchesShopkeeper = false
+      } else {
+        // Convert both to strings and compare
+        const borrowerIdStr = String(borrowerShopkeeperId)
+        const filterIdStr = String(shopkeeperFilter)
+        matchesShopkeeper = borrowerIdStr === filterIdStr
+
+        if (borrowers.indexOf(borrower) === 0) {
+          console.log('Borrower ID String:', borrowerIdStr)
+          console.log('Filter ID String:', filterIdStr)
+          console.log('Match Result:', matchesShopkeeper)
+        }
+      }
+    }
 
     return matchesSearch && matchesKYC && matchesShopkeeper
   })
@@ -189,11 +218,16 @@ export default function BorrowerManagement() {
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Shopkeepers</option>
-              {shopkeepers.map(shopkeeper => (
-                <option key={shopkeeper.id} value={shopkeeper.id}>
-                  {shopkeeper.shopName || shopkeeper.fullName}
-                </option>
-              ))}
+              {/* Use unique shopkeeper IDs from borrowers to avoid ID mismatch */}
+              {Array.from(new Set(borrowers.map(b => b.shopkeeperId).filter(Boolean))).map(shopkeeperId => {
+                const borrower = borrowers.find(b => b.shopkeeperId === shopkeeperId)
+                const shopkeeperName = borrower?.shopkeeperName || `Shopkeeper ${shopkeeperId.slice(-4)}`
+                return (
+                  <option key={shopkeeperId} value={shopkeeperId}>
+                    {shopkeeperName}
+                  </option>
+                )
+              })}
             </select>
           </div>
         </div>
@@ -418,36 +452,7 @@ export default function BorrowerManagement() {
                 </div>
               </div>
 
-              {/* KYC Status */}
-              <div className="mb-6">
-                <h4 className="text-md font-semibold text-gray-900 mb-4 flex items-center">
-                  <FileText className="h-5 w-5 mr-2 text-purple-600" />
-                  KYC Status
-                </h4>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getKYCBadgeColor(viewingBorrower.kycStatus)}`}>
-                      {viewingBorrower.kycStatus}
-                    </span>
-                    {viewingBorrower.kycStatus === 'pending' && (
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleKYCUpdate(viewingBorrower.id, 'verified')}
-                          className="px-3 py-1 !bg-green-500 !hover:bg-green-600 text-white text-sm rounded-md"
-                        >
-                          Verify KYC
-                        </button>
-                        <button
-                          onClick={() => handleKYCUpdate(viewingBorrower.id, 'rejected')}
-                          className="px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
-                        >
-                          Reject KYC
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+
 
               {/* Financial Summary */}
               <div className="mb-6">

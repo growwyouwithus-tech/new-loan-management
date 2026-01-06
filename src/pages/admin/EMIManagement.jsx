@@ -3,8 +3,9 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { Eye, Calendar, DollarSign, User, CheckCircle, Clock, Filter } from 'lucide-react'
+import { Eye, Calendar, DollarSign, User, CheckCircle, Clock, Filter, Search } from 'lucide-react'
 import loanStore from '../../store/loanStore'
+import shopkeeperStore from '../../store/shopkeeperStore'
 import { format } from 'date-fns'
 
 export default function EMIManagement() {
@@ -14,23 +15,61 @@ export default function EMIManagement() {
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [dateFilter, setDateFilter] = useState('')
   const [showDateFilter, setShowDateFilter] = useState(false)
+  const [shopkeeperFilter, setShopkeeperFilter] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
   const { loans, getPayments, activeLoans } = loanStore()
-  
-  // Get all payments from store (only for active loans, not completed ones)
-  const allPayments = getPayments().filter(payment => {
-    const loan = loans.find(l => l.id === payment.loanId)
-    return loan && loan.status !== 'Paid' // Exclude completed loans
-  })
+  const { shopkeepers, fetchShopkeepers } = shopkeeperStore()
+
+  // Get all payments from store (show ALL payments, including completed loans)
+  const allPayments = getPayments()
+
+  console.log('=== EMI Management Debug ===')
+  console.log('Total Payments:', allPayments.length)
+  console.log('Total Loans:', loans.length)
+  console.log('Active Loans:', activeLoans.length)
+  console.log('All Payments:', allPayments)
 
   useEffect(() => {
-    // Use payments from store (recorded from shopkeeper panel)
-    const allEMIs = allPayments.map((payment, index) => {
+    console.log('=== Checking Loan Payments ===')
+    loans.forEach((loan, index) => {
+      console.log(`Loan ${index + 1} (${loan.loanId}):`, {
+        status: loan.status,
+        paymentsCount: loan.payments?.length || 0,
+        payments: loan.payments
+      })
+    })
+
+    // If loanStore.payments is empty, try to get payments from loan.payments array
+    let paymentsToUse = allPayments
+
+    if (allPayments.length === 0) {
+      console.log('loanStore.payments is empty, using loan.payments instead')
+      // Extract payments from each loan's payments array
+      paymentsToUse = loans.flatMap(loan =>
+        (loan.payments || []).map((payment, index) => ({
+          id: payment._id || `${loan.id}-${index}`,
+          loanId: loan.id,
+          amount: payment.amount,
+          date: payment.paymentDate,
+          method: payment.paymentMode,
+          collectedBy: payment.collectedBy,
+          transactionId: payment.transactionId,
+          status: 'Paid',
+          emiNumber: index + 1,
+          timestamp: payment.createdAt
+        }))
+      )
+      console.log('Extracted payments from loans:', paymentsToUse.length)
+    }
+
+    // Use payments from store (recorded from shopkeeper panel) or from loans
+    const allEMIs = paymentsToUse.map((payment, index) => {
       const loan = loans.find(l => l.id === payment.loanId)
       const isFirstEMI = payment.emiNumber === 1
       const fileCharge = 500
       const baseEMIAmount = loan?.emiAmount || (loan?.loanAmount / (loan?.tenure || 1)) || 0
       const emiAmountWithFileCharge = isFirstEMI ? baseEMIAmount + fileCharge : baseEMIAmount
-      
+
       return {
         id: payment.id,
         emiId: `EMI-${payment.loanId}-${payment.emiNumber || (index + 1)}`,
@@ -53,24 +92,59 @@ export default function EMIManagement() {
         customerEmail: loan?.clientEmail || 'N/A',
         timestamp: payment.timestamp,
         isFirstEMI: isFirstEMI,
-        appliedDate: loan?.appliedDate || 'N/A' // Add loan application date
+        appliedDate: loan?.appliedDate || 'N/A',
+        shopkeeperId: loan?.shopkeeperId?._id || loan?.shopkeeperId // Add shopkeeperId for filtering
       }
     })
-    
+
+    console.log('Total EMIs created:', allEMIs.length)
     setEmis(allEMIs)
     setFilteredEmis(allEMIs)
   }, [loans, allPayments])
 
-  // Filter EMIs by date
+  useEffect(() => {
+    fetchShopkeepers()
+  }, [])
+
+  // Filter EMIs by date, shopkeeper, and search term
   const handleDateFilter = (date) => {
-    if (!date) {
-      setFilteredEmis(emis)
-    } else {
-      const filtered = emis.filter(emi => emi.paymentDate === date)
-      setFilteredEmis(filtered)
-    }
     setDateFilter(date)
   }
+
+  useEffect(() => {
+    let filtered = emis
+
+    // Filter by date
+    if (dateFilter) {
+      filtered = filtered.filter(emi => emi.paymentDate === dateFilter)
+    }
+
+    // Filter by shopkeeper
+    if (shopkeeperFilter !== 'all') {
+      filtered = filtered.filter(emi => {
+        // Get the shopkeeper ID from the EMI data
+        const emiShopkeeperId = emi.shopkeeperId
+        if (!emiShopkeeperId) return false
+
+        // Convert both to strings for comparison
+        const emiIdStr = (typeof emiShopkeeperId === 'object' ? emiShopkeeperId._id || emiShopkeeperId.toString() : emiShopkeeperId).toString()
+        const filterIdStr = shopkeeperFilter.toString()
+
+        return emiIdStr === filterIdStr
+      })
+    }
+
+    // Filter by search term (loan ID or borrower name)
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(emi =>
+        emi.emiId?.toLowerCase().includes(term) ||
+        emi.loanCustomer?.toLowerCase().includes(term)
+      )
+    }
+
+    setFilteredEmis(filtered)
+  }, [emis, dateFilter, shopkeeperFilter, searchTerm, loans])
 
   const handleViewDetails = (emi) => {
     setSelectedEMI(emi)
@@ -313,6 +387,73 @@ export default function EMIManagement() {
           </CardContent>
         </Card>
       )}
+
+      {/* Shopkeeper and Search Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by EMI ID or Customer Name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Shopkeeper Filter */}
+            <div className="md:w-64">
+              <select
+                value={shopkeeperFilter}
+                onChange={(e) => setShopkeeperFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Shopkeepers</option>
+                {/* Use unique shopkeeper IDs from EMIs to avoid ID mismatch */}
+                {Array.from(new Set(emis.map(e => e.shopkeeperId).filter(Boolean))).map(shopkeeperId => {
+                  const emi = emis.find(e => e.shopkeeperId === shopkeeperId)
+                  const loan = loans.find(l => l.id === emi?.loanId)
+                  const shopkeeperName = loan?.shopkeeperId?.fullName ||
+                    loan?.shopkeeperId?.username ||
+                    `Shopkeeper ${shopkeeperId.slice(-4)}`
+                  return (
+                    <option key={shopkeeperId} value={shopkeeperId}>
+                      {shopkeeperName}
+                    </option>
+                  )
+                })}
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(searchTerm || shopkeeperFilter !== 'all') && (
+              <button
+                onClick={() => {
+                  setSearchTerm('')
+                  setShopkeeperFilter('all')
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {(searchTerm || shopkeeperFilter !== 'all' || dateFilter) && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Showing {filteredEmis.length} of {emis.length} EMI payments
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* EMI Table */}
       <Card>

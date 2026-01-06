@@ -1111,7 +1111,7 @@ export default function ApplyLoan() {
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('paymentMode') ? 'text-red-600' : 'text-gray-700'}`}>Payment Mode *</label>
                 <div className="flex flex-wrap gap-3 md:gap-6 mt-3">
-                  {['auto_debit', 'manual', 'cash'].map(m => <label key={m} className="inline-flex items-center cursor-pointer group"><input type="radio" value={m} {...register('paymentMode')} className="h-4 w-4 md:h-5 md:w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2 md:ml-2.5 capitalize font-medium text-sm md:text-base text-gray-700 group-hover:text-blue-600 transition-colors">{m.replace('_', ' ')}</span></label>)}
+                  {['auto_debit', 'cash'].map(m => <label key={m} className="inline-flex items-center cursor-pointer group"><input type="radio" value={m} {...register('paymentMode')} className="h-4 w-4 md:h-5 md:w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2 md:ml-2.5 capitalize font-medium text-sm md:text-base text-gray-700 group-hover:text-blue-600 transition-colors">{m.replace('_', ' ')}</span></label>)}
                 </div>
                 {errors.paymentMode && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.paymentMode.message}</p>}
                 {missingFields.includes('paymentMode') && !errors.paymentMode && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
@@ -1147,7 +1147,7 @@ export default function ApplyLoan() {
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('relation') ? 'text-red-600' : 'text-gray-700'}`}>Relation *</label>
                 <select {...register('relation')} className={`w-full rounded-lg border-2 py-2.5 px-3 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${missingFields.includes('relation') ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-400 hover:border-gray-300'}`}>
                   <option value="">Select Relation</option>
-                  {['father', 'elder_brother', 'elder_sister', 'colleague', 'neighbor'].map(r => <option key={r} value={r} className="capitalize">{r.replace('_', ' ')}</option>)}
+                  {['father', 'brother', 'sister', 'colleague', 'neighbor'].map(r => <option key={r} value={r} className="capitalize">{r.replace('_', ' ')}</option>)}
                 </select>
                 {errors.relation && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.relation.message}</p>}
                 {missingFields.includes('relation') && !errors.relation && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
@@ -1878,8 +1878,8 @@ export default function ApplyLoan() {
                     }}
                     disabled={isSubmitting}
                     className={`inline-flex items-center justify-center px-6 md:px-10 py-2.5 md:py-3 border border-transparent text-sm md:text-base font-bold rounded-lg shadow-xl text-white transition-all duration-200 ${isSubmitting
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 transform hover:scale-105'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 transform hover:scale-105'
                       }`}
                   >
                     {isSubmitting ? (

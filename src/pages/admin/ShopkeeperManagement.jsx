@@ -897,11 +897,11 @@ export default function ShopkeeperManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Shop Name</p>
-                  <p className="font-medium">{viewingShopkeeper.name}</p>
+                  <p className="font-medium">{viewingShopkeeper.shopName}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Owner Name</p>
-                  <p className="font-medium">{viewingShopkeeper.owner}</p>
+                  <p className="font-medium">{viewingShopkeeper.ownerName}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Email</p>

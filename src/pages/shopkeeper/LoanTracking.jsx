@@ -248,19 +248,29 @@ export default function LoanTracking() {
     {
       id: 'actions',
       header: 'Actions',
-      cell: ({ row }) => (
-        <div className="flex space-x-2">
-          <Button size="sm" variant="outline" onClick={() => handleViewDetails(row.original)} title="View Details">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => handleEditLoan(row.original)} title="Edit Loan">
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => handleDeleteLoan(row.original.id)} title="Delete Loan">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const canEdit = row.original.status === 'Verified' || row.original.status === 'Pending';
+        return (
+          <div className="flex space-x-2">
+            <Button size="sm" variant="outline" onClick={() => handleViewDetails(row.original)} title="View Details">
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleEditLoan(row.original)}
+              title={canEdit ? "Edit Loan" : "Cannot edit approved loans"}
+              disabled={!canEdit}
+              className={!canEdit ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleDeleteLoan(row.original.id)} title="Delete Loan">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
     },
   ]
 
@@ -313,8 +323,8 @@ export default function LoanTracking() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className={`p-3 rounded-xl shadow-lg ${loan.status === 'active' ? 'bg-gradient-to-br from-green-500 to-green-600' :
-                        loan.status === 'overdue' ? 'bg-gradient-to-br from-red-500 to-red-600' :
-                          'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                      loan.status === 'overdue' ? 'bg-gradient-to-br from-red-500 to-red-600' :
+                        'bg-gradient-to-br from-yellow-500 to-yellow-600'
                       }`}>
                       <CreditCard className="h-5 w-5 text-white" />
                     </div>
@@ -371,6 +381,8 @@ export default function LoanTracking() {
                     variant="outline"
                     className="flex-1"
                     onClick={() => handleEditLoan(loan)}
+                    disabled={loan.status !== 'Verified' && loan.status !== 'Pending'}
+                    title={loan.status === 'Verified' || loan.status === 'Pending' ? 'Edit Loan' : 'Cannot edit approved loans'}
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
@@ -806,9 +818,9 @@ export default function LoanTracking() {
                 </CardHeader>
                 <CardContent>
                   <div className={`p-4 rounded-lg border-l-4 ${selectedLoan.status === 'Rejected' ? 'bg-red-50 border-red-500' :
-                      selectedLoan.status === 'Verified' ? 'bg-blue-50 border-blue-500' :
-                        selectedLoan.status === 'Approved' ? 'bg-green-50 border-green-500' :
-                          'bg-yellow-50 border-yellow-500'
+                    selectedLoan.status === 'Verified' ? 'bg-blue-50 border-blue-500' :
+                      selectedLoan.status === 'Approved' ? 'bg-green-50 border-green-500' :
+                        'bg-yellow-50 border-yellow-500'
                     }`}>
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
@@ -832,9 +844,9 @@ export default function LoanTracking() {
                       </div>
                       <div className="flex-1">
                         <p className={`text-sm font-semibold mb-2 ${selectedLoan.status === 'Rejected' ? 'text-red-900' :
-                            selectedLoan.status === 'Verified' ? 'text-blue-900' :
-                              selectedLoan.status === 'Approved' ? 'text-green-900' :
-                                'text-yellow-900'
+                          selectedLoan.status === 'Verified' ? 'text-blue-900' :
+                            selectedLoan.status === 'Approved' ? 'text-green-900' :
+                              'text-yellow-900'
                           }`}>
                           {selectedLoan.status === 'Rejected' ? 'Rejection Reason:' :
                             selectedLoan.status === 'Verified' ? 'Verification Note:' :
@@ -842,9 +854,9 @@ export default function LoanTracking() {
                                 'Status Comment:'}
                         </p>
                         <p className={`text-sm ${selectedLoan.status === 'Rejected' ? 'text-red-800' :
-                            selectedLoan.status === 'Verified' ? 'text-blue-800' :
-                              selectedLoan.status === 'Approved' ? 'text-green-800' :
-                                'text-yellow-800'
+                          selectedLoan.status === 'Verified' ? 'text-blue-800' :
+                            selectedLoan.status === 'Approved' ? 'text-green-800' :
+                              'text-yellow-800'
                           }`}>
                           {selectedLoan.statusComment || selectedLoan.verifierComment || selectedLoan.adminComment}
                         </p>

@@ -1,6 +1,7 @@
 /* Print Styles for Loan Details */
 
 @media print {
+
   /* Hide everything by default */
   body * {
     visibility: hidden;
@@ -57,7 +58,12 @@
   }
 
   /* Typography */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: #000 !important;
     page-break-after: avoid;
   }
@@ -99,12 +105,12 @@
   }
 
   /* Space between sections */
-  .space-y-6 > * {
+  .space-y-6>* {
     margin-bottom: 20px;
     page-break-inside: avoid;
   }
 
-  .space-y-4 > * {
+  .space-y-4>* {
     margin-bottom: 15px;
     page-break-inside: avoid;
   }
@@ -145,7 +151,9 @@
   }
 
   /* Force all containers to expand */
-  div, section, article {
+  div,
+  section,
+  article {
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
@@ -181,9 +189,9 @@
 
   /* Ensure all parent containers allow content to flow */
   #loan-print-section,
-  #loan-print-section > *,
-  #loan-print-section > * > *,
-  #loan-print-section > * > * > * {
+  #loan-print-section>*,
+  #loan-print-section>*>*,
+  #loan-print-section>*>*>* {
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;

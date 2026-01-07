@@ -151,7 +151,7 @@ const FormInput = ({ name, label, register, errors, icon: Icon, className = '', 
 );
 
 // Reusable File Input
-const FileInput = ({ name, label, register, errors, resetKey, isMissing = false }) => {
+const FileInput = ({ name, label, register, errors, resetKey, isMissing = false, existingImageUrl = null }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showCameraModal, setShowCameraModal] = useState(false);
@@ -165,6 +165,27 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (galleryInputRef.current) galleryInputRef.current.value = '';
   }, [resetKey]);
+
+  // Set preview from existing image URL when in edit mode
+  useEffect(() => {
+    if (existingImageUrl && !previewUrl && !selectedFile) {
+      // Handle both base64 and file path URLs
+      if (existingImageUrl.startsWith('data:image')) {
+        setPreviewUrl(existingImageUrl);
+      } else if (existingImageUrl.startsWith('/uploads/')) {
+        // Convert backend path to full URL
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        setPreviewUrl(`${baseUrl}${existingImageUrl}`);
+      } else if (existingImageUrl.startsWith('http')) {
+        setPreviewUrl(existingImageUrl);
+      } else {
+        // Assume it's a relative path
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        setPreviewUrl(`${baseUrl}/uploads/${existingImageUrl}`);
+      }
+      setSelectedFile('Existing image');
+    }
+  }, [existingImageUrl, previewUrl, selectedFile]);
 
   const {
     ref,
@@ -283,6 +304,10 @@ const FileInput = ({ name, label, register, errors, resetKey, isMissing = false 
                 src={previewUrl}
                 alt="Preview"
                 className="w-32 h-32 object-cover rounded-lg border-2 border-green-500 shadow-md"
+                onError={(e) => {
+                  console.error('Failed to load image:', previewUrl);
+                  e.target.style.display = 'none';
+                }}
               />
             </div>
           )}
@@ -469,6 +494,7 @@ export default function ApplyLoan() {
   const [missingFields, setMissingFields] = useState([]);
   const [isEditMode, setIsEditMode] = useState(!!editLoan);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingImages, setExistingImages] = useState({});
 
   const { addLoanApplication, loans, updateLoan } = loanStore();
   const { user, accessToken, isAuthenticated } = useAuthStore();
@@ -561,6 +587,17 @@ export default function ApplyLoan() {
       };
 
       setAllFormData(formData);
+
+      // Set existing image URLs
+      setExistingImages({
+        photo: editLoan.customerPhoto || editLoan.clientPhoto || '',
+        aadharFront: editLoan.aadhaarFrontImage || editLoan.clientAadharFront || '',
+        aadharBack: editLoan.aadhaarBackImage || editLoan.clientAadharBack || '',
+        panFront: editLoan.panFrontImage || editLoan.panCardImage || editLoan.clientPanFront || '',
+        guarantorPhoto: editLoan.guarantorPhoto || '',
+        guarantorAadharFront: editLoan.guarantorAadhaarFrontImage || editLoan.guarantorAadharFront || '',
+        guarantorAadharBack: editLoan.guarantorAadhaarBackImage || editLoan.guarantorAadharBack || '',
+      });
 
       // Set values for current step
       Object.keys(formData).forEach(key => {
@@ -1083,12 +1120,12 @@ export default function ApplyLoan() {
               </div>
 
               <AddressFields register={register} errors={errors} isOpen={isAddressOpen} toggle={() => setIsAddressOpen(!isAddressOpen)} missingFields={missingFields} />
-              <FileInput name="photo" label="Live Photo Upload *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('photo')} />
+              <FileInput name="photo" label="Live Photo Upload *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('photo')} existingImageUrl={existingImages.photo} />
               <FormInput name="aadharNumber" label="Aadhar Number *" register={register} errors={errors} icon={CreditCard} maxLength={12} placeholder="12-digit number" isMissing={missingFields.includes('aadharNumber')} />
-              <FileInput name="aadharFront" label="Aadhar Front Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('aadharFront')} />
-              <FileInput name="aadharBack" label="Aadhar Back Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('aadharBack')} />
+              <FileInput name="aadharFront" label="Aadhar Front Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('aadharFront')} existingImageUrl={existingImages.aadharFront} />
+              <FileInput name="aadharBack" label="Aadhar Back Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('aadharBack')} existingImageUrl={existingImages.aadharBack} />
               <FormInput name="panNumber" label="PAN Number *" type="text" register={register} errors={errors} icon={CreditCard} maxLength={10} placeholder="ABCDE1234F" className="uppercase" isMissing={missingFields.includes('panNumber')} />
-              <FileInput name="panFront" label="PAN Front Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('panFront')} />
+              <FileInput name="panFront" label="PAN Front Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('panFront')} existingImageUrl={existingImages.panFront} />
             </div>
           </div>
         );
@@ -1165,10 +1202,10 @@ export default function ApplyLoan() {
               <FormInput name="guarantorMobile" label="Mobile Number *" type="tel" register={register} errors={errors} icon={Phone} maxLength={10} placeholder="10-digit number" isMissing={missingFields.includes('guarantorMobile')} />
               <FormInput name="guarantorWorkingAddress" label="Working Address *" register={register} errors={errors} icon={Briefcase} placeholder="Enter working address" isMissing={missingFields.includes('guarantorWorkingAddress')} />
               <AddressFields register={register} errors={errors} isOpen={isAddressOpen} toggle={() => setIsAddressOpen(!isAddressOpen)} prefix="guarantor" missingFields={missingFields} />
-              <FileInput name="guarantorPhoto" label="Live Photo Upload *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorPhoto')} />
+              <FileInput name="guarantorPhoto" label="Live Photo Upload *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorPhoto')} existingImageUrl={existingImages.guarantorPhoto} />
               <FormInput name="guarantorAadharNumber" label="Aadhar Number *" register={register} errors={errors} icon={CreditCard} maxLength={12} placeholder="12-digit number" isMissing={missingFields.includes('guarantorAadharNumber')} />
-              <FileInput name="guarantorAadharFront" label="Aadhar Front Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorAadharFront')} />
-              <FileInput name="guarantorAadharBack" label="Aadhar Back Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorAadharBack')} />
+              <FileInput name="guarantorAadharFront" label="Aadhar Front Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorAadharFront')} existingImageUrl={existingImages.guarantorAadharFront} />
+              <FileInput name="guarantorAadharBack" label="Aadhar Back Photo *" register={register} errors={errors} resetKey={resetKey} isMissing={missingFields.includes('guarantorAadharBack')} existingImageUrl={existingImages.guarantorAadharBack} />
               <FormInput name="referenceName" label="Reference Name" register={register} errors={errors} icon={User} placeholder="Enter reference name" isMissing={missingFields.includes('referenceName')} />
               <FormInput name="referenceNumber" label="Reference Mobile Number" type="tel" register={register} errors={errors} icon={Phone} maxLength={10} placeholder="10-digit number" isMissing={missingFields.includes('referenceNumber')} />
             </div>

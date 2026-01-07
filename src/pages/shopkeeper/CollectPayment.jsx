@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { toast } from 'react-toastify'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
@@ -17,7 +17,7 @@ export default function CollectPayment() {
   const [searchAadhar, setSearchAadhar] = useState('')
   const location = useLocation()
   const preselectedLoanId = location.state?.loanId
-  const { register, handleSubmit, reset, setValue } = useForm()
+  const { register, handleSubmit, reset, setValue, control } = useForm()
   const { activeLoans, approvedLoans, loans: allLoans, recordPayment, collectPayment, initializeActiveLoans } = loanStore()
 
   // Initialize active loans from approved loans when component mounts
@@ -82,20 +82,11 @@ export default function CollectPayment() {
   const onSubmit = async (data) => {
     try {
       console.log('Form data:', data);
-      console.log('Available loans:', loans);
+      console.log('Selected loan from state:', selectedLoan);
 
-      // Find loan by matching both id and _id
-      const loanIdFromForm = data.loanId;
-      const selectedLoan = loans.find(l =>
-        String(l.id) === String(loanIdFromForm) ||
-        String(l._id) === String(loanIdFromForm)
-      )
-
-      console.log('Looking for loan ID:', loanIdFromForm);
-      console.log('Found loan:', selectedLoan);
-
+      // Use the selectedLoan from state instead of searching again
       if (!selectedLoan) {
-        toast.error('Selected loan not found')
+        toast.error('Please select a loan first')
         return
       }
 
@@ -182,9 +173,29 @@ export default function CollectPayment() {
                     <Input
                       value={searchName}
                       onChange={(e) => {
-                        setSearchName(e.target.value)
+                        const nameValue = e.target.value
+                        setSearchName(nameValue)
                         setSelectedLoan(null)
                         setValue('loanId', '')
+
+                        // Auto-fill Aadhaar if name matches a loan
+                        if (nameValue.trim()) {
+                          const matchingLoans = loans.filter(loan => {
+                            const clientName = loan.clientName || loan.customerName || ''
+                            return clientName.toLowerCase().includes(nameValue.toLowerCase())
+                          })
+
+                          if (matchingLoans.length === 1) {
+                            // Auto-fill Aadhaar
+                            const aadhar = matchingLoans[0].clientAadharNumber || matchingLoans[0].customerAadhaar || ''
+                            setSearchAadhar(aadhar)
+
+                            // Auto-select the loan
+                            setSelectedLoan(matchingLoans[0])
+                            setValue('loanId', matchingLoans[0]._id || matchingLoans[0].id)
+                            setValue('amount', matchingLoans[0].emiAmount || matchingLoans[0].loanAmount || 0)
+                          }
+                        }
                       }}
                       placeholder="Enter client name"
                     />
@@ -194,9 +205,29 @@ export default function CollectPayment() {
                     <Input
                       value={searchAadhar}
                       onChange={(e) => {
-                        setSearchAadhar(e.target.value)
+                        const aadharValue = e.target.value
+                        setSearchAadhar(aadharValue)
                         setSelectedLoan(null)
                         setValue('loanId', '')
+
+                        // Auto-fill Name if Aadhaar matches a loan
+                        if (aadharValue.trim()) {
+                          const matchingLoans = loans.filter(loan => {
+                            const aadharNumber = loan.clientAadharNumber || loan.customerAadhaar || ''
+                            return aadharNumber.includes(aadharValue)
+                          })
+
+                          if (matchingLoans.length === 1) {
+                            // Auto-fill Name
+                            const name = matchingLoans[0].clientName || matchingLoans[0].customerName || ''
+                            setSearchName(name)
+
+                            // Auto-select the loan
+                            setSelectedLoan(matchingLoans[0])
+                            setValue('loanId', matchingLoans[0]._id || matchingLoans[0].id)
+                            setValue('amount', matchingLoans[0].emiAmount || matchingLoans[0].loanAmount || 0)
+                          }
+                        }
                       }}
                       placeholder="Enter Aadhar number"
                     />
@@ -214,20 +245,30 @@ export default function CollectPayment() {
                       </p>
                     </div>
                   )}
-                  <Select
-                    {...register('loanId')}
+                  <select
+                    className="w-full rounded-lg border-2 border-gray-200 py-2.5 px-3 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 focus:border-blue-400 hover:border-gray-300"
                     onChange={(e) => {
                       const loanIdValue = e.target.value
-                      const loan = loans.find((l) =>
+                      console.log('Dropdown changed, selected value:', loanIdValue)
+                      console.log('Filtered loans:', filteredLoans)
+
+                      // Search in filteredLoans to ensure we find the loan after filtering
+                      const loan = filteredLoans.find((l) =>
                         String(l.id) === String(loanIdValue) ||
                         String(l._id) === String(loanIdValue)
                       )
+
+                      console.log('Found loan:', loan)
                       setSelectedLoan(loan)
+
+                      // Set the loanId in the form
+                      setValue('loanId', loanIdValue)
 
                       // Auto-fill form fields when loan is selected
                       if (loan) {
                         const emiAmount = loan.emiAmount || loan.loanAmount || 0
                         setValue('amount', emiAmount)
+                        console.log('Set EMI amount:', emiAmount)
                       }
                     }}
                   >
@@ -237,7 +278,7 @@ export default function CollectPayment() {
                         {loan.loanId || loan.id} - {loan.clientName || loan.customerName} - ₹{loan.emiAmount || 'N/A'}
                       </option>
                     ))}
-                  </Select>
+                  </select>
                 </div>
 
                 {selectedLoan && (

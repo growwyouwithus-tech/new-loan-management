@@ -637,12 +637,14 @@ export default function ApplyLoan() {
   const calculateEMI = () => {
     if (!loanAmount || !tenure) return 0;
     const n = parseInt(tenure);
-    // Simple flat interest: Monthly interest = loanAmount × 3.5%
-    const monthlyInterest = loanAmount * interest;
+    // Add file charge to loan amount before calculating interest
+    const totalLoanWithFileCharge = loanAmount + fileCharge;
+    // Simple flat interest: Monthly interest = (loanAmount + fileCharge) × interest rate
+    const monthlyInterest = totalLoanWithFileCharge * interest;
     // Total interest for all months
     const totalInterest = monthlyInterest * n;
-    // Total payable = loan amount + total interest
-    const totalPayable = loanAmount + totalInterest;
+    // Total payable = (loan amount + file charge) + total interest
+    const totalPayable = totalLoanWithFileCharge + totalInterest;
     // EMI = total payable / number of months
     const emi = totalPayable / n;
     return Math.ceil(emi);
@@ -1263,12 +1265,12 @@ export default function ApplyLoan() {
                   )}
                   <div className="flex justify-between font-semibold border-t pt-2"><span className="text-gray-800">Loan Amount:</span><span>₹{loanAmount.toLocaleString()}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600">Monthly EMI ({tenure} months @ {(interest * 100).toFixed(2)}%):</span><span>₹{emi.toLocaleString()}</span></div>
-                  <div className="flex justify-between text-red-600"><span className="text-gray-600">File Charge (1st EMI):</span><span>+ ₹{fileCharge.toLocaleString()}</span></div>
-                  <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span className="text-gray-800">First EMI Total:</span><span>₹{(emi + fileCharge).toLocaleString()}</span></div>
+                  <div className="flex justify-between text-xs text-gray-500 italic"><span>Note: File charge (₹300) is included in EMI calculation</span></div>
                 </div>
               </div>
-            )}
-          </div>
+            )
+            }
+          </div >
         );
       case 4: // Signature Upload
         const summaryData = { ...allFormData, ...watch() };
@@ -1533,13 +1535,8 @@ export default function ApplyLoan() {
                       <span className="text-gray-600">Monthly EMI ({previewData.tenure} months @ {(interest * 100).toFixed(2)}%):</span>
                       <span className="font-semibold text-gray-900">₹{emi.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-gray-600">File Charge (1st EMI):</span>
-                      <span className="font-semibold text-red-600">+ ₹{fileCharge.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 bg-green-50 px-3 rounded font-bold text-lg">
-                      <span className="text-gray-800">First EMI Total:</span>
-                      <span className="text-green-600">₹{(emi + fileCharge).toLocaleString()}</span>
+                    <div className="flex justify-between items-center py-2 text-xs text-gray-500 italic">
+                      <span>Note: File charge (₹300) is included in EMI calculation</span>
                     </div>
                   </div>
                 </div>

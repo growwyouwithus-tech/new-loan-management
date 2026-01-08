@@ -501,7 +501,7 @@ export default function LoanTracking() {
             })()}
 
             {/* Loan Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
@@ -528,6 +528,61 @@ export default function LoanTracking() {
                     <p className="text-sm text-muted-foreground">Tenure</p>
                     <p className="text-2xl font-bold text-purple-600">
                       {selectedLoan.tenure || 12} months
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">Application Mode</p>
+                    <p className="text-xl font-bold text-orange-600 capitalize">
+                      {selectedLoan.applicationMode === 'self' ? 'Self' : 'Max Born'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Financial Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-blue-700">Total Interest</p>
+                    <p className="text-2xl font-bold text-blue-900">
+                      ₹{(() => {
+                        const emi = Number(selectedLoan.emiAmount || selectedLoan.emi || 0);
+                        const tenure = Number(selectedLoan.tenure || 12);
+                        const loanAmount = Number(selectedLoan.loanAmount || selectedLoan.price || 0);
+                        const totalPayable = emi * tenure;
+                        const totalInterest = totalPayable - loanAmount - 300;
+                        return totalInterest.toLocaleString();
+                      })()}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-purple-700">Total Amount</p>
+                    <p className="text-2xl font-bold text-purple-900">
+                      ₹{(() => {
+                        const emi = Number(selectedLoan.emiAmount || selectedLoan.emi || 0);
+                        const tenure = Number(selectedLoan.tenure || 12);
+                        return (emi * tenure).toLocaleString();
+                      })()}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-green-50 to-green-100">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-green-700">Interest Rate</p>
+                    <p className="text-2xl font-bold text-green-900">
+                      {((selectedLoan.interestRate || 0.03) * 100).toFixed(2)}%
                     </p>
                   </div>
                 </CardContent>

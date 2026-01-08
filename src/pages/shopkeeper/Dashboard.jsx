@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { DollarSign, FileText, Users, TrendingUp, Clock, CheckCircle, CalendarCheck, Clock3, CheckCircle2 } from 'lucide-react'
 import loanStore from '../../store/loanStore'
+import shopkeeperStore from '../../store/shopkeeperStore'
+import { useAuthStore } from '../../store/authStore'
 
 
 const collectionData = [
@@ -24,11 +26,18 @@ const recentLoans = [
 export default function ShopkeeperDashboard() {
   const navigate = useNavigate()
   const { loans, fetchLoans, loading } = loanStore()
-  
+  const { shopkeepers, fetchShopkeepers } = shopkeeperStore()
+  const { user } = useAuthStore()
+
   useEffect(() => {
     fetchLoans()
-  }, [])
-  
+    fetchShopkeepers()
+  }, [fetchLoans, fetchShopkeepers])
+
+  // Get current shopkeeper's token balance
+  const currentShopkeeper = shopkeepers.find(sk => sk.email === user?.email)
+  const tokenBalance = currentShopkeeper?.tokenBalance || 0
+
   // Calculate real data from loans
   const totalLoans = loans.length
   const activeLoans = loans.filter(l => l.status === 'Active' || l.status === 'Overdue').length
@@ -37,12 +46,12 @@ export default function ShopkeeperDashboard() {
   const approvedLoans = loans.filter(l => l.status === 'Approved').length
   const completedLoans = loans.filter(l => l.status === 'Paid').length
   const selfLoansCount = loans.filter(l => l.applicationMode === 'self').length
-  
+
   // Calculate EMI stats
   const totalEmisCollected = loans.reduce((sum, loan) => sum + (loan.emisPaid || 0), 0)
   const totalEmisRemaining = loans.reduce((sum, loan) => sum + (loan.emisRemaining || 0), 0)
   const totalCustomers = new Set(loans.map(l => l.clientAadharNumber)).size
-  
+
   // Calculate collections
   const todayCollections = loans.reduce((sum, loan) => {
     const payments = loan.payments || []
@@ -121,10 +130,10 @@ export default function ShopkeeperDashboard() {
       >
         {/* Background Gradient Effect */}
         <div className={`absolute inset-0 bg-gradient-to-br ${colors.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
-        
+
         <div className="relative z-10">
           <div className="flex justify-center mb-4">
-            <motion.div 
+            <motion.div
               whileHover={{ rotate: 15, scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
               transition={{ duration: 0.3, type: 'spring', stiffness: 400 }}
@@ -159,9 +168,9 @@ export default function ShopkeeperDashboard() {
       {/* Icon Grid - 2 columns, 4 rows to fit all 8 icons without scrolling */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
         {/* Row 1 */}
-        <IconCard icon={DollarSign} label="Token Left" value="∞" color="emerald" onClick={() => {}} />
+        <IconCard icon={DollarSign} label="Token Left" value={tokenBalance} color="emerald" onClick={() => { }} />
         <IconCard icon={FileText} label="Total Loans" value={totalLoans} color="blue" onClick={() => navigate('/shopkeeper/loans')} />
-        
+
         {/* Row 2 */}
         <IconCard icon={CheckCircle} label="Active Loans" value={activeLoans} color="green" onClick={() => navigate('/shopkeeper/loans')} />
         <IconCard icon={DollarSign} label="Completed Loans" value={completedLoans} color="cyan" onClick={() => navigate('/shopkeeper/loans')} />
@@ -169,7 +178,7 @@ export default function ShopkeeperDashboard() {
         {/* Row 3 */}
         <IconCard icon={Users} label="Self Loans" value={selfLoansCount} color="green" onClick={() => navigate('/shopkeeper/loans')} />
         <IconCard icon={CalendarCheck} label="EMIs Collected" value={totalEmisCollected} color="blue" onClick={() => navigate('/shopkeeper/collect-payment')} />
-        
+
         {/* Row 4 */}
         <IconCard icon={Clock3} label="EMIs Remaining" value={totalEmisRemaining} color="red" onClick={() => navigate('/shopkeeper/loans')} />
         <IconCard icon={DollarSign} label="Today's Collections" value={`₹${todayCollections.toLocaleString()}`} color="green" onClick={() => navigate('/shopkeeper/collect-payment')} />

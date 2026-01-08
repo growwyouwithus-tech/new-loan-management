@@ -4,6 +4,7 @@ import { Menu, Bell, User, LogOut, Sun, Moon, ChevronDown } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useThemeStore } from '../../store/themeStore'
 import notificationStore from '../../store/notificationStore'
+import shopkeeperStore from '../../store/shopkeeperStore'
 import Button from '../ui/Button'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -12,6 +13,7 @@ export default function Header({ onMenuClick }) {
   const { user, logout } = useAuthStore()
   const { theme, toggleTheme } = useThemeStore()
   const { getUnreadCount, getRecentNotifications, markAsRead, clearAll, getPanelsWithNotifications } = notificationStore()
+  const { shopkeepers } = shopkeeperStore()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const notificationRef = useRef(null)
@@ -19,6 +21,12 @@ export default function Header({ onMenuClick }) {
 
   const unreadCount = getUnreadCount()
   const recentNotifications = getRecentNotifications(5)
+
+  // Get shopkeeper data for shop name
+  const currentShopkeeper = shopkeepers.find(sk => sk.email === user?.email)
+  const displayName = user?.role === 'shopkeeper' && currentShopkeeper?.shopName
+    ? currentShopkeeper.shopName
+    : user?.name
 
   const handleLogout = () => {
     logout()
@@ -28,7 +36,7 @@ export default function Header({ onMenuClick }) {
   const showClearNotificationMessage = () => {
     const panelsBefore = getPanelsWithNotifications()
     const totalCleared = Object.values(panelsBefore).reduce((sum, count) => sum + count, 0)
-    
+
     // Create toast message
     const message = document.createElement('div')
     message.className = 'fixed top-20 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm animate-pulse'
@@ -38,9 +46,9 @@ export default function Header({ onMenuClick }) {
         ${totalCleared} notifications cleared from current panel
       </div>
     `
-    
+
     document.body.appendChild(message)
-    
+
     // Remove message after 3 seconds
     setTimeout(() => {
       message.remove()
@@ -106,9 +114,9 @@ export default function Header({ onMenuClick }) {
 
           {/* Notifications */}
           <div className="relative" ref={notificationRef}>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="relative"
               onClick={() => setShowNotifications(!showNotifications)}
             >
@@ -140,15 +148,13 @@ export default function Header({ onMenuClick }) {
                       recentNotifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-3 border-b cursor-pointer hover:bg-accent transition-colors ${
-                            !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                          }`}
+                          className={`p-3 border-b cursor-pointer hover:bg-accent transition-colors ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
                           onClick={() => handleNotificationClick(notification)}
                         >
                           <div className="flex items-start gap-2">
-                            <div className={`w-2 h-2 rounded-full mt-2 ${
-                              !notification.read ? 'bg-blue-500' : 'bg-gray-300'
-                            }`} />
+                            <div className={`w-2 h-2 rounded-full mt-2 ${!notification.read ? 'bg-blue-500' : 'bg-gray-300'
+                              }`} />
                             <div className="flex-1">
                               <p className="text-sm font-medium">{notification.title}</p>
                               <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
@@ -199,7 +205,7 @@ export default function Header({ onMenuClick }) {
                 <User className="h-4 w-4 text-primary-foreground" />
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-sm font-medium">{displayName}</p>
                 <p className="text-xs text-muted-foreground capitalize">{user?.role?.replace('_', ' ')}</p>
               </div>
               <ChevronDown className="h-4 w-4" />

@@ -95,7 +95,9 @@ export default function Header({ onMenuClick }) {
           >
             <Menu className="h-5 w-5 text-blue-600" />
           </Button>
-          <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">Loan Management System</h1>
+          <h1 className="text-base md:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">
+            {user?.role === 'shopkeeper' && currentShopkeeper?.shopName ? currentShopkeeper.shopName : 'Loan Management System'}
+          </h1>
         </div>
 
         <div className="flex items-center gap-2">

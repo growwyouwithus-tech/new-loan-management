@@ -13,8 +13,8 @@ export default function EMIManagement() {
   const [filteredEmis, setFilteredEmis] = useState([])
   const [selectedEMI, setSelectedEMI] = useState(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [dateFilter, setDateFilter] = useState('')
-  const [showDateFilter, setShowDateFilter] = useState(false)
+  const [dateRange, setDateRange] = useState({ start: '', end: '' })
+  const [showDateFilter, setShowDateFilter] = useState(true) // Always true or remove usage
   const [shopkeeperFilter, setShopkeeperFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const { loans, getPayments, activeLoans } = loanStore()
@@ -107,16 +107,25 @@ export default function EMIManagement() {
   }, [])
 
   // Filter EMIs by date, shopkeeper, and search term
-  const handleDateFilter = (date) => {
-    setDateFilter(date)
+  const handleDateFilter = (type, value) => {
+    setDateRange(prev => ({ ...prev, [type]: value }))
   }
 
   useEffect(() => {
     let filtered = emis
 
-    // Filter by date
-    if (dateFilter) {
-      filtered = filtered.filter(emi => emi.paymentDate === dateFilter)
+    // Filter by date range
+    if (dateRange.start) {
+      filtered = filtered.filter(emi => {
+        const emiDate = new Date(emi.paymentDate).toISOString().split('T')[0]
+        return emiDate >= dateRange.start
+      })
+    }
+    if (dateRange.end) {
+      filtered = filtered.filter(emi => {
+        const emiDate = new Date(emi.paymentDate).toISOString().split('T')[0]
+        return emiDate <= dateRange.end
+      })
     }
 
     // Filter by shopkeeper
@@ -144,7 +153,7 @@ export default function EMIManagement() {
     }
 
     setFilteredEmis(filtered)
-  }, [emis, dateFilter, shopkeeperFilter, searchTerm, loans])
+  }, [emis, dateRange, shopkeeperFilter, searchTerm, loans])
 
   const handleViewDetails = (emi) => {
     setSelectedEMI(emi)
@@ -322,7 +331,7 @@ export default function EMIManagement() {
             </div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setShowDateFilter(!showDateFilter)}>
+        <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -356,37 +365,50 @@ export default function EMIManagement() {
       </div>
 
       {/* Date Filter */}
-      {showDateFilter && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filter by Date
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-center">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filter by Date
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 items-center">
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Start Date</label>
               <Input
                 type="date"
-                value={dateFilter}
-                onChange={(e) => handleDateFilter(e.target.value)}
+                value={dateRange.start}
+                onChange={(e) => handleDateFilter('start', e.target.value)}
                 className="max-w-xs"
               />
+            </div>
+            <span className="mt-5 text-gray-400">-</span>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">End Date</label>
+              <Input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => handleDateFilter('end', e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+            <div className="mt-5">
               <Button
                 variant="outline"
-                onClick={() => handleDateFilter('')}
+                onClick={() => setDateRange({ start: '', end: '' })}
               >
                 Clear Filter
               </Button>
             </div>
-            {dateFilter && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Showing {filteredEmis.length} payments for {formatDate(dateFilter)}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          {(dateRange.start || dateRange.end) && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Showing {filteredEmis.length} payments {dateRange.start ? `from ${formatDate(dateRange.start)}` : ''} {dateRange.end ? `to ${formatDate(dateRange.end)}` : ''}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Shopkeeper and Search Filters */}
       <Card>
@@ -447,7 +469,7 @@ export default function EMIManagement() {
               </button>
             )}
           </div>
-          {(searchTerm || shopkeeperFilter !== 'all' || dateFilter) && (
+          {(searchTerm || shopkeeperFilter !== 'all' || dateRange.start || dateRange.end) && (
             <p className="text-sm text-muted-foreground mt-2">
               Showing {filteredEmis.length} of {emis.length} EMI payments
             </p>
@@ -466,7 +488,7 @@ export default function EMIManagement() {
               <DollarSign className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No EMI payments found</h3>
               <p className="text-gray-500">
-                {dateFilter ? 'No payments found for selected date' : 'No EMI payments have been collected yet'}
+                {(dateRange.start || dateRange.end) ? 'No payments found for selected date range' : 'No EMI payments have been collected yet'}
               </p>
             </div>
           ) : (

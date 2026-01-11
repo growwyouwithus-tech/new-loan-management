@@ -1229,8 +1229,8 @@ export default function ApplyLoan() {
                 {errors.category && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.category.message}</p>}
                 {missingFields.includes('category') && !errors.category && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
               </div>
-              <FormInput name="productName" label="Product Name *" register={register} errors={errors} icon={Briefcase} isMissing={missingFields.includes('productName')} />
               <FormInput name="productCompany" label="Product Company *" register={register} errors={errors} icon={Building} isMissing={missingFields.includes('productCompany')} />
+              <FormInput name="productName" label="Product Name *" register={register} errors={errors} icon={Briefcase} isMissing={missingFields.includes('productName')} />
               <FormInput name="price" label="Price (Max ₹20,000) *" type="number" register={register} errors={errors} icon={Banknote} min={1} max={20000} isMissing={missingFields.includes('price')} />
               <FormInput name="serialNumber" label="Serial Number *" register={register} errors={errors} icon={Hash} isMissing={missingFields.includes('serialNumber')} />
               <FormInput name="securityKey" label="Security Key" register={register} errors={errors} icon={Hash} placeholder="Enter security key" isMissing={missingFields.includes('securityKey')} />

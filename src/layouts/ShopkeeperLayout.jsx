@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { 
-  LayoutDashboard, PlusCircle, FileText, CreditCard, 
+import {
+  LayoutDashboard, PlusCircle, FileText, CreditCard,
   Users, DollarSign, Bell, Home, Plus, User, Menu, X
 } from 'lucide-react'
 import Header from '../components/common/Header'
@@ -12,6 +12,7 @@ const sidebarItems = [
   { path: '/shopkeeper/apply-loan', label: 'Apply Loan', icon: PlusCircle },
   { path: '/shopkeeper/loans', label: 'My Loans', icon: FileText },
   { path: '/shopkeeper/collect-payment', label: 'Collect Payment', icon: CreditCard },
+  { path: '/shopkeeper/payment-records', label: 'Payment Records', icon: FileText },
   { path: '/shopkeeper/notifications', label: 'Notifications', icon: Bell },
 ]
 
@@ -36,7 +37,7 @@ export default function ShopkeeperLayout() {
       setIsMobile(isMobileView)
       // Don't close sidebar here as it prevents it from opening on mobile
     }
-    
+
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
@@ -48,8 +49,8 @@ export default function ShopkeeperLayout() {
   }, [location.pathname])
 
   const isActiveTab = (path) => {
-    return location.pathname === path || 
-           (path !== '/shopkeeper' && location.pathname.startsWith(path))
+    return location.pathname === path ||
+      (path !== '/shopkeeper' && location.pathname.startsWith(path))
   }
 
   return (
@@ -63,8 +64,8 @@ export default function ShopkeeperLayout() {
       )}
 
       {/* Sidebar - Always rendered but positioned differently based on screen size */}
-      <Sidebar 
-        items={sidebarItems} 
+      <Sidebar
+        items={sidebarItems}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -86,11 +87,10 @@ export default function ShopkeeperLayout() {
                 <button
                   key={tab.id}
                   onClick={() => navigate(tab.path)}
-                  className={`flex flex-col items-center justify-center w-full h-full transition-all duration-200 ${
-                    isActiveTab(tab.path) 
-                      ? 'text-white bg-white/10 font-semibold' 
+                  className={`flex flex-col items-center justify-center w-full h-full transition-all duration-200 ${isActiveTab(tab.path)
+                      ? 'text-white bg-white/10 font-semibold'
                       : 'text-white/70 hover:text-white hover:bg-white/5'
-                  }`}
+                    }`}
                 >
                   <tab.icon className="h-5 w-5" />
                   <span className="text-xs mt-1">{tab.label}</span>

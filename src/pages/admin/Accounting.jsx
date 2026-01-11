@@ -10,6 +10,7 @@ export default function Accounting() {
     const { loans } = loanStore()
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
     const [selectedMonth, setSelectedMonth] = useState('all')
+    const [dateRange, setDateRange] = useState({ start: '', end: '' })
 
     // Calculate monthly accounting data from loans
     const monthlyData = useMemo(() => {
@@ -61,20 +62,45 @@ export default function Accounting() {
         })).sort((a, b) => new Date(b.month) - new Date(a.month))
     }, [loans])
 
-    // Filter data by year and month
+    // Filter data by year/month OR date range
     const filteredData = useMemo(() => {
         let filtered = monthlyData
 
-        if (selectedYear !== 'all') {
-            filtered = filtered.filter(entry => entry.year === parseInt(selectedYear))
+        // Helper to get first day of month from entry
+        const getEntryDate = (entry) => {
+            const months = {
+                'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
+                'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
+            }
+            return new Date(entry.year, months[entry.monthName], 1)
         }
 
-        if (selectedMonth !== 'all') {
-            filtered = filtered.filter(entry => entry.monthName === selectedMonth)
+        if (dateRange.start || dateRange.end) {
+            // If date range is used, ignore year/month dropdowns
+            if (dateRange.start) {
+                const startDate = new Date(dateRange.start)
+                // Set start date to 1st of month to capture full month data
+                startDate.setDate(1)
+                filtered = filtered.filter(entry => getEntryDate(entry) >= startDate)
+            }
+            if (dateRange.end) {
+                const endDate = new Date(dateRange.end)
+                endDate.setDate(1) // Compare against month start
+                filtered = filtered.filter(entry => getEntryDate(entry) <= endDate)
+            }
+        } else {
+            // Use dropdown filters
+            if (selectedYear !== 'all') {
+                filtered = filtered.filter(entry => entry.year === parseInt(selectedYear))
+            }
+
+            if (selectedMonth !== 'all') {
+                filtered = filtered.filter(entry => entry.monthName === selectedMonth)
+            }
         }
 
         return filtered
-    }, [monthlyData, selectedYear, selectedMonth])
+    }, [monthlyData, selectedYear, selectedMonth, dateRange])
 
     // Get unique years from data
     const availableYears = useMemo(() => {
@@ -166,12 +192,45 @@ export default function Accounting() {
                                 <option value="December">December</option>
                             </select>
                         </div>
-                        {(selectedYear !== 'all' || selectedMonth !== 'all') && (
+
+                        <div className="flex items-center gap-2 px-2 border-l border-gray-200">
+                            <span className="text-sm font-medium text-gray-500">OR Range:</span>
+                            <div>
+                                <input
+                                    type="date"
+                                    value={dateRange.start}
+                                    onChange={(e) => {
+                                        setDateRange(prev => ({ ...prev, start: e.target.value }))
+                                        setSelectedYear('all') // Reset dropdowns when using range
+                                        setSelectedMonth('all')
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                    placeholder="Start"
+                                />
+                            </div>
+                            <span className="text-gray-500">-</span>
+                            <div>
+                                <input
+                                    type="date"
+                                    value={dateRange.end}
+                                    onChange={(e) => {
+                                        setDateRange(prev => ({ ...prev, end: e.target.value }))
+                                        setSelectedYear('all')
+                                        setSelectedMonth('all')
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                    placeholder="End"
+                                />
+                            </div>
+                        </div>
+
+                        {(selectedYear !== 'all' || selectedMonth !== 'all' || dateRange.start || dateRange.end) && (
                             <div className="flex items-end">
                                 <button
                                     onClick={() => {
                                         setSelectedYear(new Date().getFullYear())
                                         setSelectedMonth('all')
+                                        setDateRange({ start: '', end: '' })
                                     }}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
                                 >
@@ -180,7 +239,7 @@ export default function Accounting() {
                             </div>
                         )}
                     </div>
-                    {(selectedYear !== 'all' || selectedMonth !== 'all') && (
+                    {(selectedYear !== 'all' || selectedMonth !== 'all' || dateRange.start || dateRange.end) && (
                         <p className="text-sm text-gray-600 mt-2">
                             Showing {filteredData.length} of {monthlyData.length} records
                         </p>

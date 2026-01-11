@@ -37,6 +37,7 @@ export default function RepaymentManagement() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [shopkeeperFilter, setShopkeeperFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [paymentData, setPaymentData] = useState({
     amount: '',
     paymentMode: 'cash',
@@ -136,8 +137,23 @@ export default function RepaymentManagement() {
       )
     }
 
+    // Filter by date range (Due Date)
+    if (dateRange.start) {
+      filtered = filtered.filter(r => {
+        // Ensure due date is YYYY-MM-DD
+        const dueDate = new Date(r.dueDate).toISOString().split('T')[0]
+        return dueDate >= dateRange.start
+      })
+    }
+    if (dateRange.end) {
+      filtered = filtered.filter(r => {
+        const dueDate = new Date(r.dueDate).toISOString().split('T')[0]
+        return dueDate <= dateRange.end
+      })
+    }
+
     setFilteredRepayments(filtered)
-  }, [repayments, shopkeeperFilter, searchTerm])
+  }, [repayments, shopkeeperFilter, searchTerm, dateRange])
 
   const handleRecordPayment = (repayment) => {
     setSelectedLoan(repayment)
@@ -297,12 +313,36 @@ export default function RepaymentManagement() {
             </select>
           </div>
 
+          {/* Date Filter */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Start Date"
+              />
+            </div>
+            <span className="text-gray-500">-</span>
+            <div className="relative">
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="End Date"
+              />
+            </div>
+          </div>
+
           {/* Clear Filters Button */}
-          {(searchTerm || shopkeeperFilter !== 'all') && (
+          {(searchTerm || shopkeeperFilter !== 'all' || dateRange.start || dateRange.end) && (
             <button
               onClick={() => {
                 setSearchTerm('')
                 setShopkeeperFilter('all')
+                setDateRange({ start: '', end: '' })
               }}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
             >

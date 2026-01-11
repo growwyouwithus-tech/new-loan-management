@@ -10,6 +10,7 @@ import { useAuthStore } from '../../store/authStore'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
+import icon from '/logo.png'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -75,12 +76,14 @@ export default function LoginPage() {
       >
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-3xl font-bold text-center">
-              Loan Management System
+            <CardTitle className="text-3xl font-bold text-center flex justify-center">
+              <div className="w-full h-24 flex items-center justify-center">
+                <img src={icon} alt="MaxBorn Group" className="h-30 object-contain" />
+              </div>
             </CardTitle>
-            <CardDescription className="text-center">
+            {/* <CardDescription className="text-center">
               Enter your credentials to access your account
-            </CardDescription>
+            </CardDescription> */}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -135,7 +138,7 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 space-y-2 text-sm text-muted-foreground">
+            {/* <div className="mt-6 space-y-2 text-sm text-muted-foreground">
               <p className="font-semibold text-green-600 dark:text-green-400">✅ Real Database Credentials (7 Users):</p>
               <div className="space-y-1 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
                 <p className="font-medium">Admin: admin@loanmanagement.com / admin123</p>
@@ -147,7 +150,7 @@ export default function LoginPage() {
                 <p>Shopkeeper 2: shopkeeper2@example.com / 123456</p>
               </div>
               <p className="text-xs mt-2 text-green-600 dark:text-green-400">✓ Database: MongoDB Atlas (Connected)</p>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </motion.div>

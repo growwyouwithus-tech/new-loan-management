@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { DollarSign, FileText, Users, TrendingUp, Clock, CheckCircle, CalendarCheck, Clock3, CheckCircle2 } from 'lucide-react'
@@ -38,21 +38,58 @@ export default function ShopkeeperDashboard() {
   const currentShopkeeper = shopkeepers.find(sk => sk.email === user?.email)
   const tokenBalance = currentShopkeeper?.tokenBalance || 0
 
-  // Calculate real data from loans
-  const totalLoans = loans.length
-  const activeLoans = loans.filter(l => l.status === 'Active' || l.status === 'Overdue').length
-  const pendingLoans = loans.filter(l => l.status === 'Pending').length
-  const verifiedLoans = loans.filter(l => l.status === 'Verified').length
-  const approvedLoans = loans.filter(l => l.status === 'Approved').length
-  const completedLoans = loans.filter(l => l.status === 'Paid').length
-  const selfLoansCount = loans.filter(l => l.applicationMode === 'self').length
 
-  // Calculate EMI stats
-  const totalEmisCollected = loans.reduce((sum, loan) => sum + (loan.emisPaid || 0), 0)
-  const totalEmisRemaining = loans.reduce((sum, loan) => sum + (loan.emisRemaining || 0), 0)
-  const totalCustomers = new Set(loans.map(l => l.clientAadharNumber)).size
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
-  // Calculate collections
+  // Filter loans based on date if selected
+  const filteredLoans = loans.filter(loan => {
+    if (!startDate && !endDate) return true;
+    const loanDate = new Date(loan.appliedDate);
+    const start = startDate ? new Date(startDate) : new Date('1970-01-01');
+    const end = endDate ? new Date(endDate) : new Date();
+    return loanDate >= start && loanDate <= end;
+  });
+
+  // Calculate real data from filtered loans
+  const totalLoans = filteredLoans.length
+  const activeLoans = filteredLoans.filter(l => l.status === 'Active' || l.status === 'Overdue').length
+  const pendingLoans = filteredLoans.filter(l => l.status === 'Pending').length
+  const verifiedLoans = filteredLoans.filter(l => l.status === 'Verified').length
+  const approvedLoans = filteredLoans.filter(l => l.status === 'Approved').length
+  const completedLoans = filteredLoans.filter(l => l.status === 'Paid').length
+
+  // Specific Categories
+  const selfLoansCount = filteredLoans.filter(l => l.applicationMode === 'self').length
+  const maxbornLoansCount = filteredLoans.filter(l => l.applicationMode === 'max_born_group').length
+
+  // EMI Stats Logic
+  // Collected EMI: Sum of emisPaid
+  const totalEmisCollected = filteredLoans.reduce((sum, loan) => sum + (loan.emisPaid || 0), 0)
+
+  // Remaining EMI: Sum of emisRemaining
+  const totalEmisRemaining = filteredLoans.reduce((sum, loan) => sum + (loan.emisRemaining || 0), 0)
+
+  // Pending EMI: Count of active/overdue loans that have overdue payment (nextDueDate < today)
+  // Or simply using 'Overdue' status as a proxy for Pending EMI issues
+  const pendingEmiCount = filteredLoans.filter(l => {
+    if (l.status !== 'Active' && l.status !== 'Overdue') return false;
+    const dueDate = l.nextDueDate ? new Date(l.nextDueDate) : null;
+    const today = new Date();
+    return dueDate && dueDate < today;
+  }).length;
+
+  // Upcoming EMI: Active loans where nextDueDate is in future
+  const upcomingEmiCount = filteredLoans.filter(l => {
+    if (l.status !== 'Active') return false;
+    const dueDate = l.nextDueDate ? new Date(l.nextDueDate) : null;
+    const today = new Date();
+    return dueDate && dueDate >= today;
+  }).length;
+
+  const totalCustomers = new Set(filteredLoans.map(l => l.clientAadharNumber)).size
+
+  // Calculate collections (Today's collection doesn't depend on general date filter usually, but kept as is)
   const todayCollections = loans.reduce((sum, loan) => {
     const payments = loan.payments || []
     const todayPayments = payments.filter(p => {
@@ -165,22 +202,49 @@ export default function ShopkeeperDashboard() {
         </motion.div>
       </div>
 
+      {/* Date Filter */}
+      <div className="mb-6 flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex items-center gap-2">
+          <span className="text-gray-600 font-medium">From:</span>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-600 font-medium">To:</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
       {/* Icon Grid - 2 columns, 4 rows to fit all 8 icons without scrolling */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
         {/* Row 1 */}
         <IconCard icon={DollarSign} label="Token Left" value={tokenBalance} color="emerald" onClick={() => { }} />
         <IconCard icon={FileText} label="Total Loans" value={totalLoans} color="blue" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={CheckCircle} label="Active Loans" value={activeLoans} color="green" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={Clock} label="Pending Loans" value={pendingLoans} color="orange" onClick={() => navigate('/shopkeeper/loans')} />
 
         {/* Row 2 */}
-        <IconCard icon={CheckCircle} label="Active Loans" value={activeLoans} color="green" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={Users} label="Self Loans" value={selfLoansCount} color="purple" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={Users} label="Maxborn Loans" value={maxbornLoansCount} color="red" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={CheckCircle2} label="Verified Loans" value={verifiedLoans} color="indigo" onClick={() => navigate('/shopkeeper/loans')} />
         <IconCard icon={DollarSign} label="Completed Loans" value={completedLoans} color="cyan" onClick={() => navigate('/shopkeeper/loans')} />
 
         {/* Row 3 */}
-        <IconCard icon={Users} label="Self Loans" value={selfLoansCount} color="green" onClick={() => navigate('/shopkeeper/loans')} />
-        <IconCard icon={CalendarCheck} label="EMIs Collected" value={totalEmisCollected} color="blue" onClick={() => navigate('/shopkeeper/collect-payment')} />
+        <IconCard icon={CalendarCheck} label="Collected EMI" value={totalEmisCollected} color="blue" onClick={() => navigate('/shopkeeper/collect-payment')} />
+        <IconCard icon={Clock3} label="Pending EMI" value={pendingEmiCount} color="orange" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={CalendarCheck} label="Upcoming EMI" value={upcomingEmiCount} color="green" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={Clock3} label="Remaining EMI" value={totalEmisRemaining} color="red" onClick={() => navigate('/shopkeeper/loans')} />
 
         {/* Row 4 */}
-        <IconCard icon={Clock3} label="EMIs Remaining" value={totalEmisRemaining} color="red" onClick={() => navigate('/shopkeeper/loans')} />
         <IconCard icon={DollarSign} label="Today's Collections" value={`₹${todayCollections.toLocaleString()}`} color="green" onClick={() => navigate('/shopkeeper/collect-payment')} />
       </div>
     </div>

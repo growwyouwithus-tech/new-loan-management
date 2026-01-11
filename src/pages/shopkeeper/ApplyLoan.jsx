@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Phone, Calendar, CreditCard, ChevronDown, ChevronUp, Briefcase, Banknote, Building, Hash, ChevronsRight, ArrowRight, ArrowLeft, Printer, X, Camera } from 'lucide-react';
+import { User, Phone, Calendar, CreditCard, ChevronDown, ChevronUp, Briefcase, Banknote, Building, Hash, ChevronsRight, ArrowRight, ArrowLeft, Printer, X, Camera, RotateCw } from 'lucide-react';
 import loanStore from '../../store/loanStore';
 import { useAuthStore } from '../../store/authStore';
 import shopkeeperStore from '../../store/shopkeeperStore';
@@ -19,6 +19,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
   const canvasRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [error, setError] = useState(null);
+  const [facingMode, setFacingMode] = useState('environment');
 
   useEffect(() => {
     if (isOpen) {
@@ -27,18 +28,18 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       stopCamera();
     }
     return () => stopCamera();
-  }, [isOpen]);
+  }, [isOpen, facingMode]);
 
   const startCamera = async () => {
     try {
       let mediaStream;
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
+          video: { facingMode: facingMode },
           audio: false
         });
       } catch (err) {
-        console.warn('Environment camera failed, trying default camera:', err);
+        console.warn(`Camera with mode ${facingMode} failed, trying default camera:`, err);
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false
@@ -63,6 +64,10 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
+  };
+
+  const toggleCamera = () => {
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
   };
 
   const capturePhoto = () => {
@@ -112,8 +117,15 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-auto max-h-[60vh]"
+                  className="w-full h-auto max-h-[60vh] object-cover"
                 />
+                <button
+                  onClick={toggleCamera}
+                  className="absolute bottom-4 right-4 p-2 bg-white/20 backdrop-blur-sm rounded-full text-white hover:bg-white/30 transition-colors"
+                  title="Switch Camera"
+                >
+                  <RotateCw className="h-6 w-6" />
+                </button>
               </div>
 
               <button

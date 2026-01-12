@@ -1,19 +1,42 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import notificationStore from '../../store/notificationStore'
-import { useEffect } from 'react'
+import notificationService from '../../api/notificationService'
+import { useState, useEffect } from 'react'
 import { Trash2 } from 'lucide-react'
+import { toast } from 'react-toastify'
 
 export default function ShopkeeperNotifications() {
-  const { notifications, getRecentNotifications, clearNotification, clearAll } = notificationStore()
+  const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch notifications from backend
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true)
+      const data = await notificationService.getAllNotifications({ limit: 50 })
+      setNotifications(data.notifications || [])
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error)
+      toast.error('Failed to load notifications')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    getRecentNotifications()
+    fetchNotifications()
   }, [])
 
-  const clearAllNotifications = () => {
-    clearAll()
+  const clearAllNotifications = async () => {
+    try {
+      await notificationService.clearAllNotifications()
+      setNotifications([])
+      toast.success('All notifications cleared')
+    } catch (error) {
+      console.error('Failed to clear notifications:', error)
+      toast.error('Failed to clear notifications')
+    }
   }
 
   return (

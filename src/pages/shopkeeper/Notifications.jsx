@@ -6,8 +6,8 @@ import { useEffect } from 'react'
 import { Trash2 } from 'lucide-react'
 
 export default function ShopkeeperNotifications() {
-  const { notifications, getRecentNotifications, clearNotification, clearAllNotifications: clearAll } = notificationStore()
-  
+  const { notifications, getRecentNotifications, clearNotification, clearAll } = notificationStore()
+
   useEffect(() => {
     getRecentNotifications()
   }, [])
@@ -62,8 +62,8 @@ export default function ShopkeeperNotifications() {
                         notif.type === 'success'
                           ? 'success'
                           : notif.type === 'warning'
-                          ? 'warning'
-                          : 'default'
+                            ? 'warning'
+                            : 'default'
                       }
                     >
                       {notif.type}

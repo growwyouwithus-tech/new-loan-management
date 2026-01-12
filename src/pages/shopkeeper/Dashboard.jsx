@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { DollarSign, FileText, Users, TrendingUp, Clock, CheckCircle, CalendarCheck, Clock3, CheckCircle2 } from 'lucide-react'
 import loanStore from '../../store/loanStore'
 import shopkeeperStore from '../../store/shopkeeperStore'
+import notificationStore from '../../store/notificationStore'
 import { useAuthStore } from '../../store/authStore'
 
 
@@ -28,11 +29,20 @@ export default function ShopkeeperDashboard() {
   const { loans, fetchLoans, loading } = loanStore()
   const { shopkeepers, fetchShopkeepers } = shopkeeperStore()
   const { user } = useAuthStore()
+  const { updateNotifications } = notificationStore()
 
   useEffect(() => {
     fetchLoans()
     fetchShopkeepers()
-  }, [fetchLoans, fetchShopkeepers])
+  }, []) // Empty dependency array - only run once on mount
+
+  // Update notifications when loans change
+  useEffect(() => {
+    if (loans.length > 0) {
+      const activeLoans = loans.filter(l => l.status === 'Active' || l.status === 'Overdue')
+      updateNotifications(loans, activeLoans)
+    }
+  }, [loans]) // Only depend on loans, not updateNotifications
 
   // Get current shopkeeper's token balance
   const currentShopkeeper = shopkeepers.find(sk => sk.email === user?.email)
@@ -229,23 +239,24 @@ export default function ShopkeeperDashboard() {
         {/* Row 1 */}
         <IconCard icon={DollarSign} label="Token Left" value={tokenBalance} color="emerald" onClick={() => { }} />
         <IconCard icon={FileText} label="Total Loans" value={totalLoans} color="blue" onClick={() => navigate('/shopkeeper/loans')} />
-        <IconCard icon={CheckCircle} label="Active Loans" value={activeLoans} color="green" onClick={() => navigate('/shopkeeper/loans')} />
-        <IconCard icon={Clock} label="Pending Loans" value={pendingLoans} color="orange" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={CheckCircle} label="Active Loans" value={activeLoans} color="green" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Active' } })} />
+        <IconCard icon={Clock} label="Pending Loans" value={pendingLoans} color="orange" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Pending' } })} />
 
         {/* Row 2 */}
-        <IconCard icon={Users} label="Self Loans" value={selfLoansCount} color="purple" onClick={() => navigate('/shopkeeper/loans')} />
-        <IconCard icon={Users} label="Maxborn Loans" value={maxbornLoansCount} color="red" onClick={() => navigate('/shopkeeper/loans')} />
-        <IconCard icon={CheckCircle2} label="Verified Loans" value={verifiedLoans} color="indigo" onClick={() => navigate('/shopkeeper/loans')} />
-        <IconCard icon={DollarSign} label="Completed Loans" value={completedLoans} color="cyan" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={Users} label="Self Loans" value={selfLoansCount} color="purple" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'self' } })} />
+        <IconCard icon={Users} label="Maxborn Loans" value={maxbornLoansCount} color="red" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'max_born_group' } })} />
+        <IconCard icon={CheckCircle2} label="Verified Loans" value={verifiedLoans} color="indigo" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Verified' } })} />
+        <IconCard icon={DollarSign} label="Completed Loans" value={completedLoans} color="cyan" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Paid' } })} />
 
         {/* Row 3 */}
+        <IconCard icon={Clock3} label="Pending EMI" value={pendingEmiCount} color="orange" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'pending_emi' } })} />
         <IconCard icon={CalendarCheck} label="Collected EMI" value={totalEmisCollected} color="blue" onClick={() => navigate('/shopkeeper/collect-payment')} />
-        <IconCard icon={Clock3} label="Pending EMI" value={pendingEmiCount} color="orange" onClick={() => navigate('/shopkeeper/loans')} />
-        <IconCard icon={CalendarCheck} label="Upcoming EMI" value={upcomingEmiCount} color="green" onClick={() => navigate('/shopkeeper/loans')} />
+
+        <IconCard icon={CalendarCheck} label="Upcoming EMI" value={upcomingEmiCount} color="green" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'upcoming_emi' } })} />
         <IconCard icon={Clock3} label="Remaining EMI" value={totalEmisRemaining} color="red" onClick={() => navigate('/shopkeeper/loans')} />
 
         {/* Row 4 */}
-        <IconCard icon={DollarSign} label="Today's Collections" value={`₹${todayCollections.toLocaleString()}`} color="green" onClick={() => navigate('/shopkeeper/collect-payment')} />
+        {/* <IconCard icon={DollarSign} label="Today's Collections" value={`₹${todayCollections.toLocaleString()}`} color="green" onClick={() => navigate('/shopkeeper/collect-payment')} /> */}
       </div>
     </div>
   )

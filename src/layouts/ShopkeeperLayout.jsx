@@ -14,6 +14,7 @@ const sidebarItems = [
   { path: '/shopkeeper/collect-payment', label: 'Collect Payment', icon: CreditCard },
   { path: '/shopkeeper/payment-records', label: 'Payment Records', icon: FileText },
   { path: '/shopkeeper/notifications', label: 'Notifications', icon: Bell },
+  { path: '/shopkeeper/profile', label: 'My Profile', icon: User },
 ]
 
 const bottomTabs = [
@@ -88,8 +89,8 @@ export default function ShopkeeperLayout() {
                   key={tab.id}
                   onClick={() => navigate(tab.path)}
                   className={`flex flex-col items-center justify-center w-full h-full transition-all duration-200 ${isActiveTab(tab.path)
-                      ? 'text-white bg-white/10 font-semibold'
-                      : 'text-white/70 hover:text-white hover:bg-white/5'
+                    ? 'text-white bg-white/10 font-semibold'
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
                     }`}
                 >
                   <tab.icon className="h-5 w-5" />

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, Bell, User, LogOut, Sun, Moon, ChevronDown } from 'lucide-react'
+import { Menu, Bell, LogOut, ChevronDown } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
-import { useThemeStore } from '../../store/themeStore'
 import notificationStore from '../../store/notificationStore'
 import shopkeeperStore from '../../store/shopkeeperStore'
 import Button from '../ui/Button'
@@ -11,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 export default function Header({ onMenuClick }) {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
-  const { theme, toggleTheme } = useThemeStore()
+  // const { theme, toggleTheme } = useThemeStore() // Dark mode removed
   const { getUnreadCount, getRecentNotifications, markAsRead, clearAll, getPanelsWithNotifications } = notificationStore()
   const { shopkeepers } = shopkeeperStore()
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -58,7 +57,14 @@ export default function Header({ onMenuClick }) {
   const handleNotificationClick = (notification) => {
     markAsRead(notification.id)
     if (notification.type === 'new_loan_application') {
-      navigate('/verifier/loan-verifier')
+      // Logic for where to navigate on notification click
+      // For shopkeeper, maybe just stay or go to loans?
+      // Keeping original logic for now or adapting
+      if (user?.role === 'verifier') {
+        navigate('/verifier/loan-verifier')
+      } else if (user?.role === 'shopkeeper') {
+        navigate('/shopkeeper/loans')
+      }
     }
     setShowNotifications(false)
   }
@@ -101,19 +107,6 @@ export default function Header({ onMenuClick }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-          >
-            {theme === 'light' ? (
-              <Moon className="h-5 w-5" />
-            ) : (
-              <Sun className="h-5 w-5" />
-            )}
-          </Button>
-
           {/* Notifications */}
           <div className="relative" ref={notificationRef}>
             <Button
@@ -150,7 +143,7 @@ export default function Header({ onMenuClick }) {
                       recentNotifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-3 border-b cursor-pointer hover:bg-accent transition-colors ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                          className={`p-3 border-b cursor-pointer hover:bg-accent transition-colors ${!notification.read ? 'bg-blue-50' : ''
                             }`}
                           onClick={() => handleNotificationClick(notification)}
                         >
@@ -196,48 +189,59 @@ export default function Header({ onMenuClick }) {
             </AnimatePresence>
           </div>
 
-          {/* User Menu */}
-          <div className="relative" ref={userMenuRef}>
-            <Button
-              variant="ghost"
-              className="flex items-center gap-2"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
-              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                <User className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">{displayName}</p>
-                <p className="text-xs text-muted-foreground capitalize">{user?.role?.replace('_', ' ')}</p>
-              </div>
-              <ChevronDown className="h-4 w-4" />
-            </Button>
+          {/* User Menu - Only show for non-shopkeepers OR if we want to show it but without logout? 
+              Request said "header me logout button nahi aana chahiye".
+              If I remove the whole user menu, I remove the logout button. 
+              The user profile name is displayed in the menu button though.
+              Let's keep the user menu BUT remove the logout button if it is a shopkeeper? 
+              The user said "sidebar me... profile check kar sakta hai", so maybe they want profile access in sidebar instead of header.
+              "Header me logout button nahi aana chahiye" - I will strict interpret this.
+              If I hide the menu entirely for shopkeepers, that solves it.
+          */}
+          {user?.role !== 'shopkeeper' && (
+            <div className="relative" ref={userMenuRef}>
+              <Button
+                variant="ghost"
+                className="flex items-center gap-2"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                {/* <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary-foreground" />
+                </div> */}
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{user?.role?.replace('_', ' ')}</p>
+                </div>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
 
-            <AnimatePresence>
-              {showUserMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute right-0 mt-2 w-48 bg-card border rounded-md shadow-lg z-50"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="p-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleLogout()
-                      }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-accent rounded-md transition-colors"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Logout
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+              <AnimatePresence>
+                {showUserMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-2 w-48 bg-card border rounded-md shadow-lg z-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-2">
+                      {/* Only show logout if NOT shopkeeper? Actually I hid the whole menu for shopkeeper so this is safe. */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleLogout()
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-accent rounded-md transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
     </header>

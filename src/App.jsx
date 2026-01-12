@@ -34,7 +34,9 @@ import LoanTracking from './pages/shopkeeper/LoanTracking'
 import CollectPayment from './pages/shopkeeper/CollectPayment'
 import CustomerList from './pages/shopkeeper/CustomerList'
 import ShopkeeperNotifications from './pages/shopkeeper/Notifications'
+
 import PaymentRecords from './pages/shopkeeper/PaymentRecords'
+import Profile from './pages/shopkeeper/Profile'
 
 // Collections Pages
 import CollectionsDashboard from './pages/collections/Dashboard'
@@ -105,7 +107,9 @@ function App() {
           <Route path="collect-payment" element={<CollectPayment />} />
           <Route path="customers" element={<CustomerList />} />
           <Route path="notifications" element={<ShopkeeperNotifications />} />
+
           <Route path="payment-records" element={<PaymentRecords />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         {/* Collections Routes */}

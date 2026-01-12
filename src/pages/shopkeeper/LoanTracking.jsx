@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Table from '../../components/ui/Table'
 import Badge from '../../components/ui/Badge'
@@ -63,6 +63,7 @@ export default function LoanTracking() {
   // Get all loans from store
   const { loans: allLoans = [], deleteLoan, fetchLoans } = loanStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loans, setLoans] = useState([]);
   const [filteredLoans, setFilteredLoans] = useState([]);
   const [selectedLoan, setSelectedLoan] = useState(null);
@@ -97,16 +98,54 @@ export default function LoanTracking() {
         appliedDate: loan.appliedDate || new Date().toISOString().split('T')[0]
       }));
       setLoans(shopkeeperLoans);
-      setFilteredLoans(shopkeeperLoans);
-    }
-  }, [allLoans]);
 
-  // Search functionality
+      // Apply filter if present in navigation state
+      if (location.state?.filter) {
+        const filterType = location.state.filter;
+        let filtered = [];
+
+        if (filterType === 'self' || filterType === 'max_born_group') {
+          filtered = shopkeeperLoans.filter(l => l.applicationMode === filterType);
+        } else if (filterType === 'pending_emi') {
+          filtered = shopkeeperLoans.filter(l => {
+            if (l.status !== 'Active' && l.status !== 'Overdue') return false;
+            const dueDate = l.nextDueDate ? new Date(l.nextDueDate) : null;
+            const today = new Date();
+            return dueDate && dueDate < today;
+          });
+        } else if (filterType === 'upcoming_emi') {
+          filtered = shopkeeperLoans.filter(l => {
+            if (l.status !== 'Active') return false;
+            const dueDate = l.nextDueDate ? new Date(l.nextDueDate) : null;
+            const today = new Date();
+            return dueDate && dueDate >= today;
+          });
+        } else if (filterType === 'Active') {
+          filtered = shopkeeperLoans.filter(l => l.status === 'Active' || l.status === 'Overdue');
+        } else {
+          // For status-based filters like 'Pending', 'Verified', 'Paid'
+          filtered = shopkeeperLoans.filter(l => l.status === filterType);
+        }
+        setFilteredLoans(filtered);
+      } else {
+        // No filter, show all loans
+        setFilteredLoans(shopkeeperLoans);
+      }
+    }
+  }, [allLoans, location.state]);
+
+  // Search functionality - but don't override navigation filter
   useEffect(() => {
+    // If there's a navigation filter active, search within filtered results
+    const baseLoans = location.state?.filter ? filteredLoans : loans;
+
     if (!searchTerm) {
-      setFilteredLoans(loans);
+      // Only reset if no navigation filter is active
+      if (!location.state?.filter) {
+        setFilteredLoans(loans);
+      }
     } else {
-      const filtered = loans.filter(loan =>
+      const filtered = baseLoans.filter(loan =>
         loan.loanId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         loan.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         loan.clientPhone?.includes(searchTerm) ||
@@ -114,7 +153,7 @@ export default function LoanTracking() {
       );
       setFilteredLoans(filtered);
     }
-  }, [searchTerm, loans]);
+  }, [searchTerm, loans, location.state]);
 
   const handleDeleteLoan = async (loanId) => {
     if (window.confirm('Are you sure you want to delete this loan application?')) {

@@ -14,6 +14,7 @@ export default function PaymentRecords() {
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
     const [searchQuery, setSearchQuery] = useState('')
+    const [applicationMode, setApplicationMode] = useState('all')
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
 
@@ -56,11 +57,17 @@ export default function PaymentRecords() {
         const amount = String(payment.amount || '')
         const paymentId = payment.paymentId || ''
 
+        // Check application mode
+        const matchesMode = applicationMode === 'all' ||
+            (applicationMode === 'max_born_group' ? payment.loanId?.applicationMode === 'max_born_group' :
+                (payment.loanId?.applicationMode === 'self' || !payment.loanId?.applicationMode));
+
         return (
-            clientName.toLowerCase().includes(query) ||
-            loanId.toLowerCase().includes(query) ||
-            amount.includes(query) ||
-            paymentId.toLowerCase().includes(query)
+            (clientName.toLowerCase().includes(query) ||
+                loanId.toLowerCase().includes(query) ||
+                amount.includes(query) ||
+                paymentId.toLowerCase().includes(query)) &&
+            matchesMode
         )
     })
 
@@ -111,6 +118,20 @@ export default function PaymentRecords() {
                             </div>
                         </div>
 
+                        {/* Application Type Filter */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">Application Type</label>
+                            <select
+                                className="w-full h-10 px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                value={applicationMode}
+                                onChange={(e) => setApplicationMode(e.target.value)}
+                            >
+                                <option value="all">All Applications</option>
+                                <option value="self">Self Loans</option>
+                                <option value="max_born_group">Maxborn Group</option>
+                            </select>
+                        </div>
+
                         {/* Search Box */}
                         <div className="space-y-2 md:col-span-2">
                             <label className="text-sm font-medium text-gray-700">Search</label>
@@ -143,6 +164,7 @@ export default function PaymentRecords() {
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Loan ID</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client Name</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">App Type</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Mode</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Collected By</th>
                             </tr>
@@ -181,6 +203,11 @@ export default function PaymentRecords() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
                                             ₹{payment.amount?.toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="capitalize font-medium text-sm text-gray-700">
+                                                {payment.loanId?.applicationMode === 'max_born_group' ? 'Maxborn Group' : 'Self'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 uppercase">

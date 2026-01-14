@@ -213,7 +213,8 @@ export default function ShopkeeperDashboard() {
       </div>
 
       {/* Date Filter */}
-      <div className="mb-6 flex flex-wrap gap-4 items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+      {/* Date Filter */}
+      <div className="mb-6 flex items-center gap-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 overflow-x-auto whitespace-nowrap">
         <div className="flex items-center gap-2">
           <span className="text-gray-600 font-medium">From:</span>
           <input
@@ -239,13 +240,13 @@ export default function ShopkeeperDashboard() {
         {/* Row 1 */}
         <IconCard icon={DollarSign} label="Token Left" value={tokenBalance} color="emerald" onClick={() => { }} />
         <IconCard icon={FileText} label="Total Loans" value={totalLoans} color="blue" onClick={() => navigate('/shopkeeper/loans')} />
-        <IconCard icon={CheckCircle} label="Active Loans" value={activeLoans} color="green" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Active' } })} />
-        <IconCard icon={Clock} label="Pending Loans" value={pendingLoans} color="orange" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Pending' } })} />
 
         {/* Row 2 */}
         <IconCard icon={Users} label="Self Loans" value={selfLoansCount} color="purple" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'self' } })} />
         <IconCard icon={Users} label="Maxborn Loans" value={maxbornLoansCount} color="red" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'max_born_group' } })} />
+        <IconCard icon={Clock} label="Pending Loans" value={pendingLoans} color="orange" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Pending' } })} />
         <IconCard icon={CheckCircle2} label="Verified Loans" value={verifiedLoans} color="indigo" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Verified' } })} />
+        <IconCard icon={CheckCircle} label="Active Loans" value={activeLoans} color="green" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Active' } })} />
         <IconCard icon={DollarSign} label="Completed Loans" value={completedLoans} color="cyan" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Paid' } })} />
 
         {/* Row 3 */}

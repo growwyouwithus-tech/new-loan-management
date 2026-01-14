@@ -162,6 +162,30 @@ const FormInput = ({ name, label, register, errors, icon: Icon, className = '', 
   </div>
 );
 
+// Reusable Select Component
+const FormSelect = ({ name, label, register, options, errors, icon: Icon, className = '', isMissing = false, ...props }) => (
+  <div>
+    <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+    <div className="relative">
+      {Icon && <Icon className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 ${isMissing ? 'text-red-500' : 'text-gray-400'}`} />}
+      <select
+        {...register(name)}
+        className={`w-full rounded-lg border-2 py-2.5 px-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${isMissing ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-400 hover:border-gray-300'} ${Icon ? 'pl-10' : ''} ${className}`}
+        {...props}
+      >
+        <option value="">Select an option</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+    {errors[name] && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors[name].message}</p>}
+    {isMissing && !errors[name] && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
+  </div>
+);
+
 // Reusable File Input
 const FileInput = ({ name, label, register, errors, resetKey, isMissing = false, existingImageUrl = null }) => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -342,15 +366,25 @@ const AddressFields = ({ register, errors, isOpen, toggle, prefix = '', missingF
     <button
       type="button"
       onClick={toggle}
-      className={`flex items-center justify-between w-full text-left text-sm font-semibold py-2 px-3 rounded-lg transition-all duration-200 ${missingFields.some(f => f.includes('HouseNo') || f.includes('GaliNo') || f.includes('Colony') || f.includes('Landmark') || f.includes('City') || f.includes('Pincode') || f.includes('State')) ? 'text-red-600 bg-red-50 hover:bg-red-100' : 'text-blue-600 bg-blue-50 hover:bg-blue-100'}`}
+      className={`flex items-center justify-between w-full text-left text-sm font-semibold py-2 px-3 rounded-lg transition-all duration-200 ${missingFields.some(f => f.includes('HouseNo') || f.includes('ResidenceType') || f.includes('Colony') || f.includes('Landmark') || f.includes('City') || f.includes('Pincode') || f.includes('State')) ? 'text-red-600 bg-red-50 hover:bg-red-100' : 'text-blue-600 bg-blue-50 hover:bg-blue-100'}`}
     >
-      <span>{prefix ? `${prefix.charAt(0).toUpperCase() + prefix.slice(1)} ` : ''}Permanent Address</span>
+      <span>{prefix ? `${prefix.charAt(0).toUpperCase() + prefix.slice(1)} ` : ''}Current Address</span>
       {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
     </button>
     {isOpen && (
       <div className="mt-3 p-5 border-2 border-gray-200 rounded-lg bg-gradient-to-br from-gray-50 to-white grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput name={prefix ? `${prefix}HouseNo` : "houseNo"} label="House No *" register={register} errors={errors} isMissing={missingFields.includes(prefix ? `${prefix}HouseNo` : "houseNo")} />
-        <FormInput name={prefix ? `${prefix}GaliNo` : "galiNo"} label="Gali No *" register={register} errors={errors} isMissing={missingFields.includes(prefix ? `${prefix}GaliNo` : "galiNo")} />
+        <FormSelect
+          name={prefix ? `${prefix}ResidenceType` : "residenceType"}
+          label="Residential Status *"
+          register={register}
+          errors={errors}
+          isMissing={missingFields.includes(prefix ? `${prefix}ResidenceType` : "residenceType")}
+          options={[
+            { value: 'rented', label: 'Rented' },
+            { value: 'own', label: 'Own' }
+          ]}
+        />
         <FormInput name={prefix ? `${prefix}Colony` : "colony"} label="Colony *" register={register} errors={errors} isMissing={missingFields.includes(prefix ? `${prefix}Colony` : "colony")} />
         <FormInput name={prefix ? `${prefix}Landmark` : "landmark"} label="Landmark *" register={register} errors={errors} isMissing={missingFields.includes(prefix ? `${prefix}Landmark` : "landmark")} />
         <FormInput name={prefix ? `${prefix}City` : "city"} label="City *" register={register} errors={errors} isMissing={missingFields.includes(prefix ? `${prefix}City` : "city")} />
@@ -394,7 +428,7 @@ const clientMaxBornSchema = z.object({
   mobile: z.string().min(10, 'Valid mobile number is required').max(10, 'Mobile number must be 10 digits'),
   workingAddress: z.string().min(1, 'Working address is required'),
   houseNo: z.string().min(1, 'House number is required'),
-  galiNo: z.string().min(1, 'Gali/Street is required'),
+  residenceType: z.string().min(1, 'Residential status is required'),
   colony: z.string().min(1, 'Colony is required'),
   landmark: z.string().min(1, 'Landmark is required'),
   city: z.string().min(1, 'City is required'),
@@ -415,7 +449,7 @@ const guarantorSchema = z.object({
   guarantorMobile: z.string().optional(),
   guarantorWorkingAddress: z.string().optional(),
   guarantorHouseNo: z.string().optional(),
-  guarantorGaliNo: z.string().optional(),
+  guarantorResidenceType: z.string().optional(),
   guarantorColony: z.string().optional(),
   guarantorLandmark: z.string().optional(),
   guarantorCity: z.string().optional(),
@@ -554,7 +588,7 @@ export default function ApplyLoan() {
         mobile: editLoan.customerPhone || editLoan.mobile || '',
         workingAddress: editLoan.workingAddress || '',
         houseNo: editLoan.houseNo || '',
-        galiNo: editLoan.galiNo || '',
+        residenceType: editLoan.residenceType || '',
         colony: editLoan.colony || '',
         landmark: editLoan.landmark || '',
         city: editLoan.city || '',
@@ -570,7 +604,7 @@ export default function ApplyLoan() {
         guarantorMobile: editLoan.guarantorPhone || '',
         guarantorWorkingAddress: editLoan.guarantorWorkingAddress || '',
         guarantorHouseNo: editLoan.guarantorHouseNo || '',
-        guarantorGaliNo: editLoan.guarantorGaliNo || '',
+        guarantorResidenceType: editLoan.guarantorResidenceType || '',
         guarantorColony: editLoan.guarantorColony || '',
         guarantorLandmark: editLoan.guarantorLandmark || '',
         guarantorCity: editLoan.guarantorCity || '',
@@ -717,7 +751,7 @@ export default function ApplyLoan() {
           'mobile',
           'workingAddress',
           'houseNo',
-          'galiNo',
+          'residenceType',
           'colony',
           'landmark',
           'city',
@@ -753,7 +787,7 @@ export default function ApplyLoan() {
           'guarantorMobile',
           'guarantorWorkingAddress',
           'guarantorHouseNo',
-          'guarantorGaliNo',
+          'guarantorResidenceType',
           'guarantorColony',
           'guarantorLandmark',
           'guarantorCity',
@@ -972,7 +1006,8 @@ export default function ApplyLoan() {
       clientWorkingAddress: completeFormData.workingAddress,
       clientAddress: {
         houseNo: completeFormData.houseNo,
-        galiNo: completeFormData.galiNo,
+        galiNo: "N/A", // Replaced by residenceType
+        residenceType: completeFormData.residenceType,
         colony: completeFormData.colony,
         landmark: completeFormData.landmark,
         city: completeFormData.city,
@@ -997,7 +1032,8 @@ export default function ApplyLoan() {
         relation: completeFormData.relation || allFormData.relation || 'friend',
         address: {
           houseNo: completeFormData.guarantorHouseNo || allFormData.guarantorHouseNo || '123',
-          galiNo: completeFormData.guarantorGaliNo || allFormData.guarantorGaliNo || 'Main Street',
+          galiNo: "N/A", // Replaced by residenceType
+          residenceType: completeFormData.guarantorResidenceType || allFormData.guarantorResidenceType || '',
           colony: completeFormData.guarantorColony || allFormData.guarantorColony || 'Colony',
           landmark: completeFormData.guarantorLandmark || allFormData.guarantorLandmark || 'Landmark',
           city: completeFormData.guarantorCity || allFormData.guarantorCity || 'City',
@@ -1390,10 +1426,10 @@ export default function ApplyLoan() {
                   </div>
                 </div>
                 <div className="mt-6 pt-6 border-t border-gray-200">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Permanent Address</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Current Address</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <p className="text-gray-700"><span className="font-medium">House No:</span> {formatSummaryValue(previewData.houseNo)}</p>
-                    <p className="text-gray-700"><span className="font-medium">Gali No:</span> {formatSummaryValue(previewData.galiNo)}</p>
+                    <p className="text-gray-700"><span className="font-medium">Residential Status:</span> {formatSummaryValue(previewData.residenceType)}</p>
                     <p className="text-gray-700"><span className="font-medium">Colony:</span> {formatSummaryValue(previewData.colony)}</p>
                     <p className="text-gray-700"><span className="font-medium">Landmark:</span> {formatSummaryValue(previewData.landmark)}</p>
                     <p className="text-gray-700"><span className="font-medium">City:</span> {formatSummaryValue(previewData.city)}</p>

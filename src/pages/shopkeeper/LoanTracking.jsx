@@ -69,7 +69,10 @@ export default function LoanTracking() {
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [applicationTypeFilter, setApplicationTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Auto-refresh loans every 10 seconds to get latest status updates
   useEffect(() => {
@@ -139,13 +142,29 @@ export default function LoanTracking() {
     // If there's a navigation filter active, search within filtered results
     const baseLoans = location.state?.filter ? filteredLoans : loans;
 
+    // First apply filters (Application Type AND Status)
+    let processedLoans = baseLoans;
+
+    // Filter by Application Type
+    if (applicationTypeFilter !== 'all') {
+      processedLoans = processedLoans.filter(loan => {
+        if (applicationTypeFilter === 'max_born_group') {
+          return loan.applicationMode === 'max_born_group';
+        } else {
+          return loan.applicationMode === 'self' || !loan.applicationMode;
+        }
+      });
+    }
+
+    // Filter by Status
+    if (statusFilter !== 'all') {
+      processedLoans = processedLoans.filter(loan => loan.status === statusFilter);
+    }
+
     if (!searchTerm) {
-      // Only reset if no navigation filter is active
-      if (!location.state?.filter) {
-        setFilteredLoans(loans);
-      }
+      setFilteredLoans(processedLoans);
     } else {
-      const filtered = baseLoans.filter(loan =>
+      const filtered = processedLoans.filter(loan =>
         loan.loanId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         loan.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         loan.clientPhone?.includes(searchTerm) ||
@@ -153,7 +172,7 @@ export default function LoanTracking() {
       );
       setFilteredLoans(filtered);
     }
-  }, [searchTerm, loans, location.state]);
+  }, [searchTerm, loans, location.state, applicationTypeFilter, statusFilter]);
 
   const handleDeleteLoan = async (loanId) => {
     if (window.confirm('Are you sure you want to delete this loan application?')) {
@@ -247,6 +266,18 @@ export default function LoanTracking() {
       cell: ({ row }) => row.original.productName || 'N/A'
     },
     {
+      accessorKey: 'applicationMode',
+      header: 'Application Type',
+      cell: ({ row }) => {
+        const mode = row.original.applicationMode;
+        return (
+          <span className="capitalize font-medium">
+            {mode === 'max_born_group' ? 'Maxborn Group' : (mode || 'Self')}
+          </span>
+        )
+      }
+    },
+    {
       accessorKey: 'loanAmount',
       header: 'Loan Amount',
       cell: ({ row }) => `₹${Number(row.original.loanAmount || row.original.price || 0).toLocaleString()}`,
@@ -326,19 +357,45 @@ export default function LoanTracking() {
       {/* Search Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search by Date, LID, Name, Phone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by Date, LID, Name, Phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="w-full md:w-48">
+              <select
+                className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={applicationTypeFilter}
+                onChange={(e) => setApplicationTypeFilter(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                <option value="self">Self Loans</option>
+                <option value="max_born_group">Maxborn Group</option>
+              </select>
+            </div>
+            <div className="w-full md:w-48">
+              <select
+                className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Verified">Verified</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
           </div>
-          {searchTerm && (
+          {(searchTerm || applicationTypeFilter !== 'all' || statusFilter !== 'all') && (
             <p className="text-sm text-muted-foreground mt-2">
-              Found {filteredLoans.length} loan(s) matching "{searchTerm}"
+              Found {filteredLoans.length} loan(s) matching your criteria
             </p>
           )}
         </CardContent>
@@ -359,9 +416,9 @@ export default function LoanTracking() {
           >
             <Card className="shadow-lg">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-xl shadow-lg ${loan.status === 'active' ? 'bg-gradient-to-br from-green-500 to-green-600' :
+                    <div className={`p-2.5 rounded-xl shadow-md ${loan.status === 'active' ? 'bg-gradient-to-br from-green-500 to-green-600' :
                       loan.status === 'overdue' ? 'bg-gradient-to-br from-red-500 to-red-600' :
                         'bg-gradient-to-br from-yellow-500 to-yellow-600'
                       }`}>

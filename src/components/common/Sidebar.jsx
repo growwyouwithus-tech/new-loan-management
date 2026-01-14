@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { useAuthStore } from '../../store/authStore'
 import icon from '/logo2.png'
 
-export default function Sidebar({ items, isOpen, onClose }) {
+export default function Sidebar({ items, isOpen, onClose, footer }) {
   const navigate = useNavigate()
   const { logout } = useAuthStore()
 
@@ -48,12 +48,18 @@ export default function Sidebar({ items, isOpen, onClose }) {
             </motion.div>
           ))}
 
+          {footer && (
+            <div className="mt-auto pt-4 pb-2">
+              {footer}
+            </div>
+          )}
+
           {/* Logout Button - Mobile and Desktop */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: items.length * 0.05 }}
-            className="mt-4 pt-4 border-t border-white/10 lg:block"
+            className="mt-2 pt-2 border-t border-white/10 lg:block"
           >
             <button
               onClick={handleLogout}
@@ -69,7 +75,7 @@ export default function Sidebar({ items, isOpen, onClose }) {
       {/* Mobile Sidebar */}
       <aside
         className={clsx(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-blue-600 via-indigo-600 to-purple-700 border-r border-blue-500/20 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden',
+          'fixed inset-y-0 left-0 z-[60] w-64 bg-gradient-to-b from-blue-600 via-indigo-600 to-purple-700 border-r border-blue-500/20 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden flex flex-col',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -84,7 +90,7 @@ export default function Sidebar({ items, isOpen, onClose }) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto h-[calc(100vh-73px)]">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {items.map((item, index) => (
             <motion.div
               key={item.path}
@@ -109,13 +115,20 @@ export default function Sidebar({ items, isOpen, onClose }) {
               </NavLink>
             </motion.div>
           ))}
+        </nav>
+
+        <div className="p-4 border-t border-white/10">
+          {footer && (
+            <div className="mb-4">
+              {footer}
+            </div>
+          )}
 
           {/* Logout Button - Mobile and Desktop */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: items.length * 0.05 }}
-            className="mt-4 pt-4 border-t border-white/10 lg:block"
           >
             <button
               onClick={handleLogout}
@@ -125,7 +138,7 @@ export default function Sidebar({ items, isOpen, onClose }) {
               <span className="text-sm font-medium">Logout</span>
             </button>
           </motion.div>
-        </nav>
+        </div>
       </aside>
     </>
   )

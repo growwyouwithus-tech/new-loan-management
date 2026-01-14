@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, PlusCircle, FileText, CreditCard,
-  Users, DollarSign, Bell, Home, Plus, User, Menu, X
+  Users, DollarSign, Bell, Home, Plus, User, Menu, X,
+  Phone, Mail
 } from 'lucide-react'
 import Header from '../components/common/Header'
 import Sidebar from '../components/common/Sidebar'
@@ -54,6 +55,25 @@ export default function ShopkeeperLayout() {
       (path !== '/shopkeeper' && location.pathname.startsWith(path))
   }
 
+  const SupportFooter = (
+    <div className="bg-white/10 rounded-xl p-3 border border-white/10 mx-2 mb-2">
+      <p className="text-xs font-semibold text-white/70 uppercase mb-2 px-1">Support Contact</p>
+      <div className="space-y-2">
+        <div className="flex items-start gap-2 text-white/90">
+          <Phone className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+          <div className="text-xs">
+            <p>9999555584</p>
+            <p>8882823566</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-white/90">
+          <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+          <p className="text-xs break-all">maxborngroup@gmail.com</p>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Mobile Sidebar Overlay */}
@@ -69,6 +89,7 @@ export default function ShopkeeperLayout() {
         items={sidebarItems}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        footer={SupportFooter}
       />
 
       {/* Main Content */}

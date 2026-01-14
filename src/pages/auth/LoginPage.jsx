@@ -74,64 +74,64 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <Card>
+        <Card className="bg-transparent border-none shadow-none">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-3xl font-bold text-center flex justify-center">
+            <CardTitle className="text-3xl font-bold text-center flex justify-center text-white">
               <div className="w-full h-24 flex items-center justify-center">
                 <img src={icon} alt="MaxBorn Group" className="h-30 object-contain" />
               </div>
             </CardTitle>
-            {/* <CardDescription className="text-center">
+            {/* <CardDescription className="text-center text-white/70">
               Enter your credentials to access your account
             </CardDescription> */}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email or Shopkeeper ID</label>
+                <label className="text-sm font-medium text-white/90">Email or Shopkeeper ID</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-white/70" />
                   <Input
                     {...register('email')}
                     type="text"
                     placeholder="admin@lms.com or SK123456"
-                    className="pl-10"
+                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/40"
                     error={errors.email}
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                  <p className="text-sm text-red-300 font-medium">{errors.email.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Password</label>
+                <label className="text-sm font-medium text-white/90">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-white/70" />
                   <Input
                     {...register('password')}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/40"
                     error={errors.password}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-3 top-3 h-4 w-4 text-white/70 hover:text-white transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                  <p className="text-sm text-red-300 font-medium">{errors.password.message}</p>
                 )}
               </div>
 
               <Button
                 type="submit"
                 variant="success"
-                className="w-full"
+                className="w-full bg-green-500 hover:bg-green-600 border-none text-white font-semibold py-6 text-lg mt-4 shadow-lg hover:shadow-xl transition-all duration-300"
                 loading={loading}
               >
                 Sign In

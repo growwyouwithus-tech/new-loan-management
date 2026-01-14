@@ -67,7 +67,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -76,55 +76,55 @@ export default function LoginPage() {
       >
         <Card className="bg-transparent border-none shadow-none">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-3xl font-bold text-center flex justify-center text-white">
+            <CardTitle className="text-3xl font-bold text-center flex justify-center text-gray-900">
               <div className="w-full h-24 flex items-center justify-center">
                 <img src={icon} alt="MaxBorn Group" className="h-30 object-contain" />
               </div>
             </CardTitle>
-            {/* <CardDescription className="text-center text-white/70">
+            {/* <CardDescription className="text-center text-gray-500">
               Enter your credentials to access your account
             </CardDescription> */}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white/90">Email or Shopkeeper ID</label>
+                <label className="text-sm font-medium text-gray-700">Email or Shopkeeper ID</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-white/70" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     {...register('email')}
                     type="text"
                     placeholder="admin@lms.com or SK123456"
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/40"
+                    className="pl-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     error={errors.email}
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-sm text-red-300 font-medium">{errors.email.message}</p>
+                  <p className="text-sm text-red-500 font-medium">{errors.email.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white/90">Password</label>
+                <label className="text-sm font-medium text-gray-700">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-white/70" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     {...register('password')}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    className="pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-white/40"
+                    className="pl-10 pr-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     error={errors.password}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 h-4 w-4 text-white/70 hover:text-white transition-colors"
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-300 font-medium">{errors.password.message}</p>
+                  <p className="text-sm text-red-500 font-medium">{errors.password.message}</p>
                 )}
               </div>
 

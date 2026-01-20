@@ -17,7 +17,11 @@ export default function CollectPayment() {
   const [searchAadhar, setSearchAadhar] = useState('')
   const location = useLocation()
   const preselectedLoanId = location.state?.loanId
-  const { register, handleSubmit, reset, setValue, control } = useForm()
+  const { register, handleSubmit, reset, setValue, control } = useForm({
+    defaultValues: {
+      date: new Date().toISOString().split('T')[0]
+    }
+  })
   const { activeLoans, approvedLoans, loans: allLoans, recordPayment, collectPayment, initializeActiveLoans } = loanStore()
 
   // Initialize active loans from approved loans when component mounts
@@ -104,7 +108,7 @@ export default function CollectPayment() {
         amount: parseFloat(data.amount),
         method: data.method,
         transactionId: data.transactionId || '',
-        date: new Date().toISOString().split('T')[0],
+        date: data.date || new Date().toISOString().split('T')[0],
         timestamp: new Date().toISOString(),
         status: 'completed',
         collectedBy: 'shopkeeper',
@@ -120,7 +124,7 @@ export default function CollectPayment() {
       const result = await collectPayment(backendLoanId, {
         amount: parseFloat(data.amount),
         paymentMode: data.method,
-        paymentDate: paymentRecord.date,
+        paymentDate: data.date || paymentRecord.date,
         collectedBy: 'shopkeeper',
         transactionId: data.transactionId || '',
         emiNumber: emiNumber
@@ -134,7 +138,9 @@ export default function CollectPayment() {
       recordPayment(paymentRecord)
 
       toast.success(`EMI #${emiNumber} payment recorded successfully!`)
-      reset()
+      reset({
+        date: new Date().toISOString().split('T')[0]
+      })
       setSelectedLoan(null)
       setSearchName('')
       setSearchAadhar('')
@@ -149,7 +155,7 @@ export default function CollectPayment() {
       {/* Header - Mobile Optimized */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Collect Payment
+          Payment Collection
         </h1>
         <p className="text-sm md:text-base text-muted-foreground mt-1">Record customer payments</p>
       </div>
@@ -162,7 +168,7 @@ export default function CollectPayment() {
         >
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-lg md:text-xl">Record Payment</CardTitle>
+
             </CardHeader>
             <CardContent className="p-4 md:p-6">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
@@ -342,6 +348,11 @@ export default function CollectPayment() {
                     <option value="card">Card</option>
                     <option value="wallet">Wallet</option>
                   </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs md:text-sm font-semibold">Payment Date</label>
+                  <Input {...register('date')} type="date" />
                 </div>
 
                 <div>

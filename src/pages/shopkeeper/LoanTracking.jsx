@@ -71,8 +71,12 @@ export default function LoanTracking() {
   const [showPrintModal, setShowPrintModal] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [applicationTypeFilter, setApplicationTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [applicationTypeFilter, setApplicationTypeFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('Pending');
+  const [shopkeeperFilter, setShopkeeperFilter] = useState('All Shopkeeper');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
 
   // Auto-refresh loans every 10 seconds to get latest status updates
   useEffect(() => {
@@ -87,11 +91,8 @@ export default function LoanTracking() {
   // Sync with store data
   useEffect(() => {
     if (Array.isArray(allLoans)) {
-      // Filter loans to only show those submitted by the current shopkeeper
-      // For now, we'll show all loans. In a real app, you'd filter by shopkeeper ID
       const shopkeeperLoans = allLoans.map(loan => ({
         ...loan,
-        // Ensure all required fields have default values
         loanId: loan.loanId || `LN${String(loan.id).slice(-6)}`,
         clientName: loan.clientName || 'N/A',
         productName: loan.productName || 'N/A',
@@ -101,78 +102,79 @@ export default function LoanTracking() {
         appliedDate: loan.appliedDate || new Date().toISOString().split('T')[0]
       }));
       setLoans(shopkeeperLoans);
-
-      // Apply filter if present in navigation state
-      if (location.state?.filter) {
-        const filterType = location.state.filter;
-        let filtered = [];
-
-        if (filterType === 'self' || filterType === 'max_born_group') {
-          filtered = shopkeeperLoans.filter(l => l.applicationMode === filterType);
-        } else if (filterType === 'pending_emi') {
-          filtered = shopkeeperLoans.filter(l => {
-            if (l.status !== 'Active' && l.status !== 'Overdue') return false;
-            const dueDate = l.nextDueDate ? new Date(l.nextDueDate) : null;
-            const today = new Date();
-            return dueDate && dueDate < today;
-          });
-        } else if (filterType === 'upcoming_emi') {
-          filtered = shopkeeperLoans.filter(l => {
-            if (l.status !== 'Active') return false;
-            const dueDate = l.nextDueDate ? new Date(l.nextDueDate) : null;
-            const today = new Date();
-            return dueDate && dueDate >= today;
-          });
-        } else if (filterType === 'Active') {
-          filtered = shopkeeperLoans.filter(l => l.status === 'Active' || l.status === 'Overdue');
-        } else {
-          // For status-based filters like 'Pending', 'Verified', 'Paid'
-          filtered = shopkeeperLoans.filter(l => l.status === filterType);
-        }
-        setFilteredLoans(filtered);
-      } else {
-        // No filter, show all loans
-        setFilteredLoans(shopkeeperLoans);
-      }
+      setFilteredLoans(shopkeeperLoans);
     }
-  }, [allLoans, location.state]);
+  }, [allLoans]);
 
-  // Search functionality - but don't override navigation filter
+  // Search and Filter functionality
   useEffect(() => {
-    // If there's a navigation filter active, search within filtered results
-    const baseLoans = location.state?.filter ? filteredLoans : loans;
+    let processedLoans = loans;
 
-    // First apply filters (Application Type AND Status)
-    let processedLoans = baseLoans;
-
-    // Filter by Application Type
-    if (applicationTypeFilter !== 'all') {
-      processedLoans = processedLoans.filter(loan => {
-        if (applicationTypeFilter === 'max_born_group') {
-          return loan.applicationMode === 'max_born_group';
-        } else {
-          return loan.applicationMode === 'self' || !loan.applicationMode;
-        }
+    // 0. Filter by Date Range
+    if (startDate) {
+      processedLoans = processedLoans.filter(l => {
+        const date = l.appliedDate ? new Date(l.appliedDate) : new Date(l.createdAt);
+        return date >= new Date(startDate);
+      });
+    }
+    if (endDate) {
+      processedLoans = processedLoans.filter(l => {
+        const date = l.appliedDate ? new Date(l.appliedDate) : new Date(l.createdAt);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return date <= end;
       });
     }
 
-    // Filter by Status
-    if (statusFilter !== 'all') {
-      processedLoans = processedLoans.filter(loan => loan.status === statusFilter);
+    // 1. Filter by Application Type
+    if (applicationTypeFilter !== 'All') {
+      if (applicationTypeFilter === 'Maxborn') {
+        processedLoans = processedLoans.filter(l => l.applicationMode === 'max_born_group');
+      } else if (applicationTypeFilter === 'Self') {
+        processedLoans = processedLoans.filter(l => l.applicationMode === 'self' || !l.applicationMode);
+      }
     }
 
-    if (!searchTerm) {
-      setFilteredLoans(processedLoans);
-    } else {
-      const filtered = processedLoans.filter(loan =>
-        loan.loanId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        loan.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        loan.clientPhone?.includes(searchTerm) ||
-        loan.appliedDate?.includes(searchTerm)
-      );
-      setFilteredLoans(filtered);
+    // 2. Filter by Loan Status
+    // Options: Pending, Verified, Approve, Active, Defaulter, Settled, Close
+    if (statusFilter !== 'All') {
+      const lowerStatus = statusFilter.toLowerCase();
+      processedLoans = processedLoans.filter(l => {
+        const s = (l.status || '').toLowerCase();
+        if (statusFilter === 'Pending') return s === 'pending';
+        if (statusFilter === 'Verified') return s === 'verified';
+        if (statusFilter === 'Approve') return s === 'approved';
+        if (statusFilter === 'Active') return s === 'active';
+        if (statusFilter === 'Defaulter') return s === 'overdue' || s === 'defaulter';
+        if (statusFilter === 'Settled') return s === 'paid' || s === 'settled';
+        if (statusFilter === 'Close') return s === 'closed' || s === 'paid' || s === 'completed'; // Assuming 'Close' is similar to Paid/Completed
+        return s === lowerStatus;
+      });
     }
-  }, [searchTerm, loans, location.state, applicationTypeFilter, statusFilter]);
+
+    // 3. Filter by Shopkeeper
+    if (shopkeeperFilter !== 'All Shopkeeper') {
+      // Implement logic if 'Individual' means something specific
+      // For now, if "Individual", maybe we don't filter anything different unless we have a user context of "My Loans" vs "All".
+      // valid assumption: this page is "My Loans", so all are "Individual".
+      // If "All Shopkeeper" implies a wider view (perhaps for admin, but this page is shopkeeper/LoanTracking),
+      // we might leave it as pass-through for now or strictly filter if shopName matches logged in user (if we had that context handy here)
+    }
+
+    // 4. Search Bar
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      processedLoans = processedLoans.filter(loan =>
+        (loan.loanId || '').toLowerCase().includes(lowerTerm) ||
+        (loan.clientName || '').toLowerCase().includes(lowerTerm) ||
+        (loan.shopName || loan.shopkeeperName || '').toLowerCase().includes(lowerTerm) ||
+        (loan.clientAadharNumber || loan.aadharNumber || '').toLowerCase().includes(lowerTerm) ||
+        (loan.clientPhone || '').includes(lowerTerm)
+      );
+    }
+
+    setFilteredLoans(processedLoans);
+  }, [searchTerm, loans, applicationTypeFilter, statusFilter, shopkeeperFilter, startDate, endDate]);
 
   const handleDeleteLoan = async (loanId) => {
     if (window.confirm('Are you sure you want to delete this loan application?')) {
@@ -192,7 +194,6 @@ export default function LoanTracking() {
   };
 
   const handleEditLoan = (loan) => {
-    // Navigate to apply loan page with loan data for editing
     navigate('/shopkeeper/apply-loan', { state: { editLoan: loan } });
   };
 
@@ -243,27 +244,14 @@ export default function LoanTracking() {
       cell: ({ row }) => row.original.loanId || `LN${String(row.original.id).slice(-6)}`
     },
     {
-      accessorKey: 'statusComment',
-      header: 'Verifier Note',
-      cell: ({ row }) => {
-        const reason = row.original.statusComment || row.original.rejectionReason || row.original.verifierComment || row.original.adminComment;
-        if (!reason) return <span className="text-muted-foreground text-sm">No comment</span>;
-        return (
-          <div className="max-w-xs">
-            <p className="text-sm font-medium">{reason}</p>
-          </div>
-        );
-      },
+      accessorKey: 'shopName',
+      header: 'Shop Name',
+      cell: ({ row }) => row.original.shopName || row.original.shopkeeperName || 'My Shop'
     },
     {
       accessorKey: 'clientName',
-      header: 'Client Name',
+      header: 'Customer Name',
       cell: ({ row }) => row.original.clientName || 'N/A'
-    },
-    {
-      accessorKey: 'productName',
-      header: 'Product',
-      cell: ({ row }) => row.original.productName || 'N/A'
     },
     {
       accessorKey: 'applicationMode',
@@ -278,14 +266,55 @@ export default function LoanTracking() {
       }
     },
     {
+      accessorKey: 'appliedDate',
+      header: 'Loan Applied Date',
+      cell: ({ row }) => {
+        try {
+          const date = row.original.appliedDate || row.original.createdAt || new Date().toISOString();
+          return new Date(date).toLocaleDateString();
+        } catch (e) {
+          return 'N/A';
+        }
+      },
+    },
+    {
       accessorKey: 'loanAmount',
       header: 'Loan Amount',
       cell: ({ row }) => `₹${Number(row.original.loanAmount || row.original.price || 0).toLocaleString()}`,
     },
     {
       accessorKey: 'emiAmount',
-      header: 'EMI',
+      header: 'EMI Amount',
       cell: ({ row }) => `₹${Number(row.original.emiAmount || row.original.emi || 0).toLocaleString()}`,
+    },
+    {
+      accessorKey: 'penalties',
+      header: 'Penalties Charge',
+      cell: ({ row }) => `₹${Number(row.original.totalPenalty || 0).toLocaleString()}`,
+    },
+    {
+      accessorKey: 'balanceAmount',
+      header: 'Balance Amount',
+      cell: ({ row }) => {
+        const loan = row.original;
+        const emiAmount = Number(loan.emiAmount || loan.emi || 0);
+        const tenure = loan.tenure || (loan.emisPaid || 0) + (loan.emisRemaining || 0) || 12;
+        const totalAmount = emiAmount * tenure;
+        const paidEmis = loan.emisPaid || 0;
+        const paidAmount = emiAmount * paidEmis;
+
+        let balance = totalAmount - paidAmount;
+        if (balance < 0) balance = 0;
+
+        return `₹${balance.toLocaleString()}`;
+      },
+    },
+    {
+      accessorKey: 'mode',
+      header: 'Mode',
+      cell: ({ row }) => {
+        return row.original.mode || 'Online';
+      }
     },
     {
       accessorKey: 'status',
@@ -304,38 +333,26 @@ export default function LoanTracking() {
       },
     },
     {
-      accessorKey: 'appliedDate',
-      header: 'Applied Date',
-      cell: ({ row }) => {
-        try {
-          const date = row.original.appliedDate || row.original.createdAt || new Date().toISOString();
-          return new Date(date).toLocaleDateString();
-        } catch (e) {
-          return 'N/A';
-        }
-      },
-    },
-    {
       id: 'actions',
       header: 'Actions',
       cell: ({ row }) => {
         const canEdit = row.original.status === 'Verified' || row.original.status === 'Pending';
         return (
           <div className="flex space-x-2">
-            <Button size="sm" variant="outline" onClick={() => handleViewDetails(row.original)} title="View Details">
+            <Button size="sm" variant="outline" onClick={() => handleViewDetails(row.original)} title="View">
               <Eye className="h-4 w-4" />
             </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={() => handleEditLoan(row.original)}
-              title={canEdit ? "Edit Loan" : "Cannot edit approved loans"}
+              title={canEdit ? "Edit" : "Cannot edit approved loans"}
               disabled={!canEdit}
               className={!canEdit ? 'opacity-50 cursor-not-allowed' : ''}
             >
               <Edit className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="outline" onClick={() => handleDeleteLoan(row.original.id)} title="Delete Loan">
+            <Button size="sm" variant="outline" onClick={() => handleDeleteLoan(row.original.id)} title="Delete">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -354,46 +371,119 @@ export default function LoanTracking() {
         <p className="text-sm md:text-base text-muted-foreground mt-1">Track all your loan applications</p>
       </div>
 
-      {/* Search Bar */}
+      {/* Filters & Search Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search by Date, LID, Name, Phone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+
+            {/* Start Date */}
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Start Date</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="pl-9 h-10 w-full"
+                />
+              </div>
             </div>
-            <div className="w-full md:w-48">
-              <select
-                className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={applicationTypeFilter}
-                onChange={(e) => setApplicationTypeFilter(e.target.value)}
-              >
-                <option value="all">All Types</option>
-                <option value="self">Self Loans</option>
-                <option value="max_born_group">Maxborn Group</option>
-              </select>
+
+            {/* End Date */}
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">End Date</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="pl-9 h-10 w-full"
+                />
+              </div>
             </div>
-            <div className="w-full md:w-48">
+
+            {/* Loan Status */}
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Loan Status</label>
               <select
                 className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="all">All Status</option>
+                <option value="All">All Status</option>
                 <option value="Pending">Pending</option>
                 <option value="Verified">Verified</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
+                <option value="Approve">Approve</option>
+                <option value="Active">Active</option>
+                <option value="Defaulter">Defaulter</option>
+                <option value="Settled">Settled</option>
+                <option value="Close">Close</option>
               </select>
             </div>
+
+            {/* Application Type */}
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Application Type</label>
+              <select
+                className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={applicationTypeFilter}
+                onChange={(e) => setApplicationTypeFilter(e.target.value)}
+              >
+                <option value="All">All</option>
+                <option value="Maxborn">Maxborn</option>
+                <option value="Self">Self</option>
+              </select>
+            </div>
+
+            {/* Shopkeeper Wise */}
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Shopkeeper wise</label>
+              <select
+                className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={shopkeeperFilter}
+                onChange={(e) => setShopkeeperFilter(e.target.value)}
+              >
+                <option value="All Shopkeeper">All Shopkeeper</option>
+                <option value="Individual">Individual</option>
+              </select>
+            </div>
+
+            {/* Search Bar */}
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Search Bar</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search Loan ID, Name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  title="Search By Loan ID, Client Name, Shopkeeper Name, Adhar Number"
+                />
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="lg:col-span-2">
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Search Bar</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  title="Search By Loan ID, Client Name, Shopkeeper Name, Adhar Number"
+                />
+              </div>
+            </div>
+
           </div>
-          {(searchTerm || applicationTypeFilter !== 'all' || statusFilter !== 'all') && (
+          {(searchTerm || applicationTypeFilter !== 'All' || statusFilter !== 'All' || startDate || endDate) && (
             <p className="text-sm text-muted-foreground mt-2">
               Found {filteredLoans.length} loan(s) matching your criteria
             </p>

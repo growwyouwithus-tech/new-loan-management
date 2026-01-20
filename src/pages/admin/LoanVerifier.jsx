@@ -1,4 +1,4 @@
-  import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, RefreshCw, Calendar as CalendarIcon, Eye, Download, Check, X, Loader2, MoreVertical, FileText, UserCheck, AlertCircle, Upload, Phone, Mic, MicOff } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { format, parseISO, isWithinInterval } from 'date-fns';
@@ -47,7 +47,7 @@ export default function LoanVerifier() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedCalls, setRecordedCalls] = useState({});
-  
+
   // Verification checkboxes state
   const [verificationChecks, setVerificationChecks] = useState({
     clientName: false,
@@ -60,7 +60,7 @@ export default function LoanVerifier() {
     guarantorWorkingAddress: false,
     guarantorPermanentAddress: false
   });
-  
+
   // Comment modal state
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [commentAction, setCommentAction] = useState(''); // 'reject' or 'pending'
@@ -69,7 +69,7 @@ export default function LoanVerifier() {
   const clientCallRef = useRef(null);
   const guarantorCallRef = useRef(null);
   const guarantor2CallRef = useRef(null);
-  
+
   // Get loans from store
   const { pendingLoans, updateLoanStatus: updateLoanStatusInStore, rejectLoan, deleteLoan: deleteLoanFromStore } = loanStore();
   const [loans, setLoans] = useState(pendingLoans);
@@ -119,7 +119,7 @@ export default function LoanVerifier() {
       if (fromDate && toDate) {
         const startDate = new Date(fromDate);
         const endDate = new Date(toDate);
-        
+
         filteredLoans = filteredLoans.filter(loan => {
           if (!loan.appliedDate) return false;
           const loanDate = new Date(loan.appliedDate);
@@ -148,16 +148,16 @@ export default function LoanVerifier() {
         return;
       }
     }
-    
+
     try {
       // Update in store (async function)
       await updateLoanStatusInStore(id, newStatus, 'verifier', rejectionComment);
-      
+
       // If there's a comment, log it
       if (rejectionComment) {
         console.log(`${newStatus} reason:`, rejectionComment);
       }
-      
+
       toast.success(`Loan ${newStatus.toLowerCase()} successfully!`);
       // Reset states
       setSelectedLoan(null);
@@ -182,24 +182,24 @@ export default function LoanVerifier() {
       toast.error('Failed to update loan status');
     }
   };
-  
+
   // Handle opening comment modal for reject/pending
   const handleOpenCommentModal = (action) => {
     setCommentAction(action);
     setShowCommentModal(true);
   };
-  
+
   // Handle submitting comment
   const handleSubmitComment = () => {
     if (!comment.trim()) {
       toast.error('Please enter a reason!');
       return;
     }
-    
+
     const status = commentAction === 'reject' ? 'Rejected' : 'Pending';
     updateLoanStatus(selectedLoan.id, status, comment);
   };
-  
+
   // Handle checkbox change
   const handleCheckboxChange = (field) => {
     setVerificationChecks(prev => ({
@@ -230,17 +230,17 @@ export default function LoanVerifier() {
 
       // Create a new PDF document
       const doc = new jsPDF();
-      
+
       // Add title
       doc.setFontSize(18);
       doc.text('Loan Application Details', 14, 22);
       doc.setLineWidth(0.5);
       doc.line(14, 25, 196, 25);
-      
+
       // Set font for content
       doc.setFontSize(12);
       let yPosition = 40;
-      
+
       // Add loan details
       const details = [
         `Loan ID: ${loan.id}`,
@@ -252,23 +252,23 @@ export default function LoanVerifier() {
         `Gender: ${loan.details.gender}`,
         `Mobile: ${loan.details.mobile}`,
         `Applied Date: ${new Date(loan.appliedDate).toLocaleDateString()}`,
-        '','',
+        '', '',
         'Product Details',
         `Product: ${loan.productName}`,
         `Price: ₹${loan.price.toLocaleString('en-IN')}`,
         `Tenure: ${loan.tenure}`,
-        '','',
+        '', '',
         'Financial Details',
         `Down Payment (20%): ₹${loan.details.downPayment}`,
         `Loan Amount: ₹${loan.details.loanAmount}`,
         `Interest Rate: ${loan.details.interestRate}`,
         `EMI: ₹${loan.details.emi}`,
         `File Charge: ₹${loan.details.fileCharge}`,
-        '','',
+        '', '',
         'Address',
         loan.details.address
       ];
-      
+
       // Add each line to the PDF
       details.forEach((line, index) => {
         if (line === '') {
@@ -283,18 +283,18 @@ export default function LoanVerifier() {
           yPosition += 8;
         }
       });
-      
+
       // Add status with color
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(12);
       doc.text(`Status: ${loan.status}`, 14, yPosition + 10);
-      
+
       // Add a border around the status
       doc.rect(12, yPosition + 3, 30, 8);
-      
+
       // Save the PDF
       doc.save(`${documentType}_${loanId}.pdf`);
-      
+
       // Show success message
       alert(`Successfully downloaded ${documentType} for loan ${loanId}`);
     } catch (error) {
@@ -302,13 +302,13 @@ export default function LoanVerifier() {
       alert('Failed to generate download. Please try again.');
     }
   };
-  
+
   const handleCallUpload = (e, loanId, type) => {
     const file = e.target.files[0];
     if (file) {
       // In a real app, you would upload the file to the server here
       console.log(`Uploading ${type} call recording for loan ${loanId}:`, file.name);
-      
+
       // Update state to show the file is being uploaded
       setRecordedCalls(prev => ({
         ...prev,
@@ -317,7 +317,7 @@ export default function LoanVerifier() {
           [type]: { file, uploaded: false }
         }
       }));
-      
+
       // Simulate file upload
       setTimeout(() => {
         setRecordedCalls(prev => ({
@@ -327,7 +327,7 @@ export default function LoanVerifier() {
             [type]: { file, uploaded: true }
           }
         }));
-        
+
         // Reset the file input
         if (type === 'client' && clientCallRef.current) {
           clientCallRef.current.value = '';
@@ -336,22 +336,22 @@ export default function LoanVerifier() {
         } else if (type === 'guarantor2' && guarantor2CallRef.current) {
           guarantor2CallRef.current.value = '';
         }
-        
+
         toast.success(`${type === 'client' ? 'Client' : type === 'guarantor' ? 'Guarantor' : 'Second Guarantor'} call recording uploaded successfully!`);
       }, 1000);
     }
   };
-  
+
   const startCallRecording = (type) => {
     // In a real app, this would use the Web Audio API to record
     console.log(`Starting ${type} call recording`);
     setIsRecording(type);
-    
+
     // Simulate recording for 5 seconds
     setTimeout(() => {
       setIsRecording(false);
       const fakeFile = new File([`${type}-call-recording-${Date.now()}.wav`], `${type}-call.wav`, { type: 'audio/wav' });
-      
+
       // Auto-save the recording
       setRecordedCalls(prev => ({
         ...prev,
@@ -360,7 +360,7 @@ export default function LoanVerifier() {
           [type]: { file: fakeFile, uploaded: false }
         }
       }));
-      
+
       // Auto-upload the recording
       setTimeout(() => {
         setRecordedCalls(prev => ({
@@ -374,7 +374,7 @@ export default function LoanVerifier() {
       }, 1000);
     }, 5000);
   };
-  
+
   const stopCallRecording = () => {
     console.log('Stopping call recording');
     setIsRecording(false);
@@ -471,13 +471,13 @@ export default function LoanVerifier() {
           <div className="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
             <div className="flex space-x-2">
               {selectedLoan && (
-              <button
-                onClick={() => handleDownload(selectedLoan.id, 'loan_details')}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download Details
-              </button>
+                <button
+                  onClick={() => handleDownload(selectedLoan.id, 'loan_details')}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Details
+                </button>
               )}
               <div className="relative group">
                 <button className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -541,25 +541,43 @@ export default function LoanVerifier() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Client Name
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Loan ID
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aadhar Number
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Shop Name
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Applied Date
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Customer Name
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Application Type
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Loan Applied Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Loan Amount
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  EMI Amount
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Product
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price (₹)
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Price
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Mode
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Status
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Comment/Reason
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   Actions
                 </th>
               </tr>
@@ -567,7 +585,7 @@ export default function LoanVerifier() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-8 text-center">
+                  <td colSpan="13" className="px-6 py-8 text-center">
                     <div className="flex justify-center items-center space-x-2">
                       <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                       <span className="text-gray-600">Loading loans...</span>
@@ -577,77 +595,85 @@ export default function LoanVerifier() {
               ) : loans.length > 0 ? (
                 loans.map((loan) => (
                   <tr key={loan.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-bold">
+                      {loan.loanId || `LN${String(loan.id).slice(-6)}`}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {safeGet(loan, 'shopName', 'shopkeeperName') || 'My Shop'}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {safeGet(loan, 'clientName', 'name') || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {safeGet(loan, 'clientAadharNumber', 'aadharNumber') || 'N/A'}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 capitalize">
+                      {loan.applicationMode === 'max_born_group' ? 'Maxborn Group' : 'Self'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {loan.appliedDate ? format(parseISO(loan.appliedDate), 'dd/MM/yyyy') : 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{safeGet(loan, 'productName') || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">{safeGet(loan, 'tenure') || 'N/A'} months</div>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">
+                      ₹{formatCurrency(safeGet(loan, 'loanAmount', 'details.loanAmount'))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                      ₹{formatCurrency(safeGet(loan, 'emiAmount', 'details.emi'))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {safeGet(loan, 'productName') || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      ₹{formatCurrency(safeGet(loan, 'price'))}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ₹{formatCurrency(safeGet(loan, 'price'))}
+                      {safeGet(loan, 'mode') || 'Online'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(loan.status)}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 italic max-w-xs truncate" title={safeGet(loan, 'statusComment', 'rejectionReason', 'comment')}>
+                      {safeGet(loan, 'statusComment', 'rejectionReason', 'comment') || '-'}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      {/* View Button */}
-                      <button
-                        onClick={() => openDetails(loan)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="View Details"
-                      >
-                        <Eye className="h-5 w-5" />
-                      </button>
-                      
-                      {/* Action Buttons Based on Status */}
-                      {loan.status === 'Pending' && (
-                        <div className="inline-flex space-x-2">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => openDetails(loan)}
+                          className="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-2 py-1 rounded text-xs"
+                          title="View"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+
+                        {loan.status !== 'Pending' && (
+                          <button
+                            onClick={() => updateLoanStatus(loan.id, 'Pending')}
+                            className="bg-yellow-50 text-yellow-600 hover:bg-yellow-100 border border-yellow-200 px-2 py-1 rounded text-xs"
+                          >
+                            Mark Pending
+                          </button>
+                        )}
+
+                        {loan.status !== 'Verified' && loan.status !== 'Approved' && loan.status !== 'Rejected' && (
                           <button
                             onClick={() => updateLoanStatus(loan.id, 'Verified')}
-                            className="text-xs font-medium !text-green-600 hover:!text-green-900 border !border-green-200 rounded px-2 py-1 hover:!bg-green-50"
-                            title="Verify"
+                            className="bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 px-2 py-1 rounded text-xs"
                           >
                             Verify
                           </button>
+                        )}
+
+                        {loan.status !== 'Rejected' && (
                           <button
-                            onClick={() => updateLoanStatus(loan.id, 'Rejected')}
-                            className="text-xs font-medium text-red-600 hover:text-red-900 border border-red-200 rounded px-2 py-1 hover:bg-red-50"
-                            title="Reject"
+                            onClick={() => { setSelectedLoan(loan); handleOpenCommentModal('reject'); }}
+                            className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-2 py-1 rounded text-xs"
                           >
                             Reject
                           </button>
-                        </div>
-                      )}
-                      
-                      {/* Delete Button */}
-                      <button
-                        onClick={() => deleteLoan(loan.id)}
-                        className="text-red-600 hover:text-red-900 ml-2"
-                        title="Delete Loan"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      
-                      <button
-                        onClick={() => handleDownload(loan.id, 'loan_document')}
-                        className="text-gray-600 hover:text-gray-900"
-                        title="Download Documents"
-                      >
-                        <Download className="h-5 w-5" />
-                      </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan="13" className="px-6 py-4 text-center text-sm text-gray-500">
                     No loans found matching the selected filters.
                   </td>
                 </tr>
@@ -722,93 +748,93 @@ export default function LoanVerifier() {
                     </div>
                     <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientName', 'name') || 'N/A'}</p>
                   </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Aadhar Number</h4>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientAadharNumber', 'aadharNumber') || 'N/A'}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Pan Number</h4>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientPanNumber', 'panNumber') || 'N/A'}</p>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Gender</h4>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientGender', 'gender') || 'N/A'}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Father's / Spouse Name</h4>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientFatherOrSpouseName', 'fatherOrSpouseName') || 'N/A'}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Mobile</h4>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientMobile', 'mobile') || 'N/A'}</p>
-                </div>
-                 <div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={verificationChecks.clientWorkingAddress}
-                      onChange={() => handleCheckboxChange('clientWorkingAddress')}
-                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded cursor-pointer"
-                    />
-                    <h4 className="text-sm font-medium text-gray-500">Working Address</h4>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Aadhar Number</h4>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientAadharNumber', 'aadharNumber') || 'N/A'}</p>
                   </div>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientWorkingAddress', 'workingAddress') || 'N/A'}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Applied Date</h4>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {selectedLoan.appliedDate ? new Date(selectedLoan.appliedDate).toLocaleDateString('en-IN') : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Product</h4>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'productName') || 'N/A'}</p>
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={verificationChecks.tenure}
-                      onChange={() => handleCheckboxChange('tenure')}
-                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded cursor-pointer"
-                    />
-                    <h4 className="text-sm font-medium text-gray-500">Tenure</h4>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Pan Number</h4>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientPanNumber', 'panNumber') || 'N/A'}</p>
                   </div>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'tenure') || 'N/A'} months</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Price</h4>
-                  <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'price'))}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Down Payment (20%)</h4>
-                  <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'downPayment'))}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Loan Amount</h4>
-                  <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'loanAmount'))}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">Interest Rate</h4>
-                  <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'interestRate') || '3.5%'}</p>
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={verificationChecks.emi}
-                      onChange={() => handleCheckboxChange('emi')}
-                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded cursor-pointer"
-                    />
-                    <h4 className="text-sm font-medium text-gray-500">EMI</h4>
+
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Gender</h4>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientGender', 'gender') || 'N/A'}</p>
                   </div>
-                  <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'emiAmount'))}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500">File Charge</h4>
-                  <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'fileCharge', 500))}</p>
-                </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Father's / Spouse Name</h4>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientFatherOrSpouseName', 'fatherOrSpouseName') || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Mobile</h4>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientMobile', 'mobile') || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={verificationChecks.clientWorkingAddress}
+                        onChange={() => handleCheckboxChange('clientWorkingAddress')}
+                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded cursor-pointer"
+                      />
+                      <h4 className="text-sm font-medium text-gray-500">Working Address</h4>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'clientWorkingAddress', 'workingAddress') || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Applied Date</h4>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedLoan.appliedDate ? new Date(selectedLoan.appliedDate).toLocaleDateString('en-IN') : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Product</h4>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'productName') || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={verificationChecks.tenure}
+                        onChange={() => handleCheckboxChange('tenure')}
+                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded cursor-pointer"
+                      />
+                      <h4 className="text-sm font-medium text-gray-500">Tenure</h4>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'tenure') || 'N/A'} months</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Price</h4>
+                    <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'price'))}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Down Payment (20%)</h4>
+                    <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'downPayment'))}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Loan Amount</h4>
+                    <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'loanAmount'))}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">Interest Rate</h4>
+                    <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan, 'interestRate') || '3.5%'}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={verificationChecks.emi}
+                        onChange={() => handleCheckboxChange('emi')}
+                        className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded cursor-pointer"
+                      />
+                      <h4 className="text-sm font-medium text-gray-500">EMI</h4>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'emiAmount'))}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500">File Charge</h4>
+                    <p className="mt-1 text-sm text-gray-900">₹{formatCurrency(safeGet(selectedLoan, 'fileCharge', 500))}</p>
+                  </div>
                   <div className="md:col-span-2">
                     <div className="flex items-center space-x-2">
                       <input
@@ -820,8 +846,8 @@ export default function LoanVerifier() {
                       <h4 className="text-sm font-medium text-gray-500">Permanent Address</h4>
                     </div>
                     <p className="mt-1 text-sm text-gray-900">
-                      {selectedLoan.clientAddress ? 
-                        `${selectedLoan.clientAddress.houseNo || ''}, ${selectedLoan.clientAddress.galiNo || ''}, ${selectedLoan.clientAddress.colony || ''}, ${selectedLoan.clientAddress.area || ''}, ${selectedLoan.clientAddress.city || ''} - ${selectedLoan.clientAddress.pincode || ''}, ${selectedLoan.clientAddress.state || ''}` 
+                      {selectedLoan.clientAddress ?
+                        `${selectedLoan.clientAddress.houseNo || ''}, ${selectedLoan.clientAddress.galiNo || ''}, ${selectedLoan.clientAddress.colony || ''}, ${selectedLoan.clientAddress.area || ''}, ${selectedLoan.clientAddress.city || ''} - ${selectedLoan.clientAddress.pincode || ''}, ${selectedLoan.clientAddress.state || ''}`
                         : 'Address not available'}
                     </p>
                   </div>
@@ -839,9 +865,9 @@ export default function LoanVerifier() {
                       <h4 className="text-sm font-medium text-gray-500">Client Photo</h4>
                       <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedLoan.clientPhoto ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.clientPhoto)} 
-                            alt="Client Photo" 
+                          <img
+                            src={getImageUrl(selectedLoan.clientPhoto)}
+                            alt="Client Photo"
                             className="max-h-full max-w-full object-contain rounded"
                           />
                         ) : (
@@ -855,9 +881,9 @@ export default function LoanVerifier() {
                       <h4 className="text-sm font-medium text-gray-500">Aadhar Front</h4>
                       <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedLoan.clientAadharFront ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.clientAadharFront)} 
-                            alt="Aadhar Front" 
+                          <img
+                            src={getImageUrl(selectedLoan.clientAadharFront)}
+                            alt="Aadhar Front"
                             className="max-h-full max-w-full object-contain rounded"
                           />
                         ) : (
@@ -871,9 +897,9 @@ export default function LoanVerifier() {
                       <h4 className="text-sm font-medium text-gray-500">Aadhar Back</h4>
                       <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedLoan.clientAadharBack ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.clientAadharBack)} 
-                            alt="Aadhar Back" 
+                          <img
+                            src={getImageUrl(selectedLoan.clientAadharBack)}
+                            alt="Aadhar Back"
                             className="max-h-full max-w-full object-contain rounded"
                           />
                         ) : (
@@ -887,9 +913,9 @@ export default function LoanVerifier() {
                       <h4 className="text-sm font-medium text-gray-500">PAN Card</h4>
                       <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedLoan.clientPanFront ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.clientPanFront)} 
-                            alt="PAN Card" 
+                          <img
+                            src={getImageUrl(selectedLoan.clientPanFront)}
+                            alt="PAN Card"
                             className="max-h-full max-w-full object-contain rounded"
                           />
                         ) : (
@@ -991,8 +1017,8 @@ export default function LoanVerifier() {
                         <h4 className="text-sm font-medium text-gray-500">Permanent Address</h4>
                       </div>
                       <p className="mt-1 text-sm text-gray-900">
-                        {selectedLoan.guarantor?.address ? 
-                          `${selectedLoan.guarantor.address.houseNo || ''}, ${selectedLoan.guarantor.address.galiNo || ''}, ${selectedLoan.guarantor.address.colony || ''}, ${selectedLoan.guarantor.address.area || ''}, ${selectedLoan.guarantor.address.city || ''} - ${selectedLoan.guarantor.address.pincode || ''}, ${selectedLoan.guarantor.address.state || ''}` 
+                        {selectedLoan.guarantor?.address ?
+                          `${selectedLoan.guarantor.address.houseNo || ''}, ${selectedLoan.guarantor.address.galiNo || ''}, ${selectedLoan.guarantor.address.colony || ''}, ${selectedLoan.guarantor.address.area || ''}, ${selectedLoan.guarantor.address.city || ''} - ${selectedLoan.guarantor.address.pincode || ''}, ${selectedLoan.guarantor.address.state || ''}`
                           : 'Address not available'}
                       </p>
                     </div>
@@ -1005,7 +1031,7 @@ export default function LoanVerifier() {
                       <p className="mt-1 text-sm text-gray-900">{safeGet(selectedLoan.guarantor, 'referenceMobileNumber') || 'Not available'}</p>
                     </div>
                   </div>
-                  
+
                   {/* Guarantor Documents */}
                   <div className="mt-6">
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Guarantor Documents</h4>
@@ -1015,9 +1041,9 @@ export default function LoanVerifier() {
                         <h5 className="text-xs font-medium text-gray-500">Guarantor Photo</h5>
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.photo ? (
-                            <img 
-                              src={getImageUrl(selectedLoan.guarantor.photo)} 
-                              alt="Guarantor Photo" 
+                            <img
+                              src={getImageUrl(selectedLoan.guarantor.photo)}
+                              alt="Guarantor Photo"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -1031,9 +1057,9 @@ export default function LoanVerifier() {
                         <h5 className="text-xs font-medium text-gray-500">Aadhar Front</h5>
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.aadharFront ? (
-                            <img 
-                              src={getImageUrl(selectedLoan.guarantor.aadharFront)} 
-                              alt="Guarantor Aadhar Front" 
+                            <img
+                              src={getImageUrl(selectedLoan.guarantor.aadharFront)}
+                              alt="Guarantor Aadhar Front"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -1047,9 +1073,9 @@ export default function LoanVerifier() {
                         <h5 className="text-xs font-medium text-gray-500">Aadhar Back</h5>
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.aadharBack ? (
-                            <img 
-                              src={getImageUrl(selectedLoan.guarantor.aadharBack)} 
-                              alt="Guarantor Aadhar Back" 
+                            <img
+                              src={getImageUrl(selectedLoan.guarantor.aadharBack)}
+                              alt="Guarantor Aadhar Back"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -1063,9 +1089,9 @@ export default function LoanVerifier() {
                         <h5 className="text-xs font-medium text-gray-500">PAN Card</h5>
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.panFront ? (
-                            <img 
-                              src={getImageUrl(selectedLoan.guarantor.panFront)} 
-                              alt="Guarantor PAN Card" 
+                            <img
+                              src={getImageUrl(selectedLoan.guarantor.panFront)}
+                              alt="Guarantor PAN Card"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -1138,13 +1164,13 @@ export default function LoanVerifier() {
                       </p>
                     </div>
                   </div> */}
-                  
-                  {/* Second Guarantor Documents */}
-                  {/* <div className="mt-6">
+
+                {/* Second Guarantor Documents */}
+                {/* <div className="mt-6">
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Second Guarantor Documents</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> */}
-                      {/* Second Guarantor Photo */}
-                      {/* <div className="space-y-2">
+                {/* Second Guarantor Photo */}
+                {/* <div className="space-y-2">
                         <h5 className="text-xs font-medium text-gray-500">Guarantor Photo</h5>
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor2Photo ? (
@@ -1159,8 +1185,8 @@ export default function LoanVerifier() {
                         </div>
                       </div> */}
 
-                      {/* Second Guarantor Aadhar Front */}
-                      {/* <div className="space-y-2">
+                {/* Second Guarantor Aadhar Front */}
+                {/* <div className="space-y-2">
                         <h5 className="text-xs font-medium text-gray-500">Aadhar Front</h5>
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor2AadharFront ? (
@@ -1175,8 +1201,8 @@ export default function LoanVerifier() {
                         </div>
                       </div> */}
 
-                      {/* Second Guarantor Aadhar Back */}
-                      {/* <div className="space-y-2">
+                {/* Second Guarantor Aadhar Back */}
+                {/* <div className="space-y-2">
                         <h5 className="text-xs font-medium text-gray-500">Aadhar Back</h5>
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor2AadharBack ? (
@@ -1191,8 +1217,8 @@ export default function LoanVerifier() {
                         </div>
                       </div> */}
 
-                      {/* Second Guarantor PAN Card */}
-                      {/* <div className="space-y-2">
+                {/* Second Guarantor PAN Card */}
+                {/* <div className="space-y-2">
                         <h5 className="text-xs font-medium text-gray-500">PAN Card</h5>
                         <div className="h-24 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor2PanFront ? (
@@ -1210,8 +1236,8 @@ export default function LoanVerifier() {
                   </div>
                 </div> */}
               </div>
-             </div>
-             
+            </div>
+
             <div className="px-6 py-4 border-t border-gray-200">
               <div className="flex justify-end space-x-3">
                 <button
@@ -1250,7 +1276,7 @@ export default function LoanVerifier() {
           </div>
         </div>
       )}
-      
+
       {/* Comment Modal for Reject/Pending */}
       {showCommentModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
@@ -1287,11 +1313,10 @@ export default function LoanVerifier() {
               <button
                 type="button"
                 onClick={handleSubmitComment}
-                className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  commentAction === 'reject' 
-                    ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' 
+                className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${commentAction === 'reject'
+                    ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
                     : 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-500'
-                }`}
+                  }`}
               >
                 Submit
               </button>

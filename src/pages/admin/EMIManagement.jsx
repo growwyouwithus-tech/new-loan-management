@@ -49,7 +49,7 @@ export default function EMIManagement() {
         (loan.payments || []).map((payment, index) => ({
           id: payment._id || `${loan.id}-${index}`,
           loanId: loan.id,
-          amount: payment.amount,
+          amount: payment.amount || 0,
           date: payment.paymentDate,
           method: payment.paymentMode,
           collectedBy: payment.collectedBy,
@@ -79,7 +79,7 @@ export default function EMIManagement() {
         emiAmount: emiAmountWithFileCharge,
         baseEMIAmount: baseEMIAmount,
         fileCharge: isFirstEMI ? fileCharge : 0,
-        paymentAmount: payment.amount,
+        paymentAmount: payment.amount || 0,
         paymentDate: payment.date,
         paymentMode: payment.method,
         collectedBy: payment.collectedBy || 'Shopkeeper',
@@ -223,7 +223,7 @@ export default function EMIManagement() {
       accessorKey: 'paymentAmount',
       cell: ({ row }) => (
         <span className="font-medium text-blue-600">
-          ₹{row.original.paymentAmount.toLocaleString()}
+          ₹{(row.original.paymentAmount || 0).toLocaleString()}
         </span>
       )
     },
@@ -600,7 +600,7 @@ export default function EMIManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500">Paid Amount</label>
-                    <p className="font-medium text-blue-600">₹{selectedEMI.paymentAmount.toLocaleString()}</p>
+                    <p className="font-medium text-blue-600">₹{(selectedEMI.paymentAmount || 0).toLocaleString()}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Payment Date</label>

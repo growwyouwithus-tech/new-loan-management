@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { 
-  DollarSign, TrendingUp, FileText, 
+import {
+  DollarSign, TrendingUp, FileText,
   Users, Clock, XCircle, Bell, Download, Share2, Copy
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -17,17 +17,17 @@ import loanStore from '../../store/loanStore'
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const { notifications, getRecentNotifications, markAsRead, updateNotifications } = notificationStore()
-  const { 
-    loans, 
-    pendingLoans, 
-    verifiedLoans, 
-    approvedLoans, 
-    activeLoans, 
+  const {
+    loans,
+    pendingLoans,
+    verifiedLoans,
+    approvedLoans,
+    activeLoans,
     completedLoans,
     fetchLoans,
     loading
   } = loanStore()
-  
+
   // Calculate actual stats from loan store
   const stats = {
     totalLoans: loans.length,
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
     overdueAmount: activeLoans
       .filter(loan => loan.status === 'Overdue')
       .reduce((sum, loan) => sum + (loan.loanAmount || 0), 0),
-    npaPercentage: activeLoans.length > 0 
+    npaPercentage: activeLoans.length > 0
       ? ((activeLoans.filter(loan => loan.status === 'Overdue').length / activeLoans.length) * 100).toFixed(1)
       : 0,
     totalDisbursed: approvedLoans.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0),
@@ -43,20 +43,20 @@ export default function AdminDashboard() {
     pendingApprovals: verifiedLoans.length,
     kycPending: pendingLoans.filter(loan => loan.kycStatus !== 'verified').length
   }
-  
+
   // Calculate chart data from actual loans
   const getDisbursementData = () => {
     const last7Days = []
     for (let i = 6; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
-      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      
+      const dateStr = date.toLocaleDateString('en-GB')
+
       const dayLoans = approvedLoans.filter(loan => {
         const loanDate = new Date(loan.approvedDate || loan.createdAt)
-        return loanDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) === dateStr
+        return loanDate.toLocaleDateString('en-GB') === dateStr
       })
-      
+
       last7Days.push({
         date: dateStr,
         amount: dayLoans.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0)
@@ -64,19 +64,19 @@ export default function AdminDashboard() {
     }
     return last7Days
   }
-  
+
   const getCollectionData = () => {
     const last7Days = []
     for (let i = 6; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
-      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      
+      const dateStr = date.toLocaleDateString('en-GB')
+
       const dayCollections = completedLoans.filter(loan => {
         const loanDate = new Date(loan.completedDate || loan.updatedAt)
-        return loanDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) === dateStr
+        return loanDate.toLocaleDateString('en-GB') === dateStr
       })
-      
+
       last7Days.push({
         date: dateStr,
         amount: dayCollections.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0)
@@ -84,7 +84,7 @@ export default function AdminDashboard() {
     }
     return last7Days
   }
-  
+
   const getLoansByStatusData = () => {
     return [
       { name: 'Pending', value: pendingLoans.length, color: '#f59e0b' },
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
       { name: 'Completed', value: completedLoans.length, color: '#6b7280' }
     ]
   }
-  
+
   useEffect(() => {
     // Fetch loans from backend on component mount
     fetchLoans()
@@ -103,21 +103,21 @@ export default function AdminDashboard() {
   useEffect(() => {
     updateNotifications(loans, activeLoans)
   }, [loans, activeLoans, updateNotifications])
-  
+
   const recentNotifications = getRecentNotifications(5)
 
   const [copied, setCopied] = useState(false)
-  
+
   const appDownloadLink = window.location.origin
   const shopkeeperAppLink = `${appDownloadLink}/shopkeeper`
-  
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shopkeeperAppLink)
     setCopied(true)
     toast.success('Link copied to clipboard!')
     setTimeout(() => setCopied(false), 2000)
   }
-  
+
   const handleDownloadAPK = () => {
     // This would link to your APK file hosted on a server
     toast.info('APK download will start shortly...')
@@ -126,7 +126,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-50 via-white to-blue-50 min-h-screen">
-      <motion.div 
+      <motion.div
         className="flex items-center justify-between"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -139,8 +139,8 @@ export default function AdminDashboard() {
           <p className="text-gray-600 text-sm sm:text-base md:text-lg font-medium">Complete overview of your loan management system</p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="success" 
+          <Button
+            variant="success"
             onClick={() => navigate('/admin/verified-loans')}
             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200"
           >
@@ -322,8 +322,8 @@ export default function AdminDashboard() {
               <CardDescription>Latest loan activities and alerts</CardDescription>
             </div>
             {recentNotifications.length > 0 && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => navigate('/admin/notifications')}
               >
@@ -337,11 +337,10 @@ export default function AdminDashboard() {
             ) : (
               <div className="space-y-3">
                 {recentNotifications.map((notif) => (
-                  <div 
-                    key={notif.id} 
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      !notif.read ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
-                    }`}
+                  <div
+                    key={notif.id}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${!notif.read ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+                      }`}
                     onClick={() => !notif.read && markAsRead(notif.id)}
                   >
                     <div className="flex items-start justify-between">
@@ -357,11 +356,11 @@ export default function AdminDashboard() {
                           {new Date(notif.timestamp).toLocaleString()}
                         </p>
                       </div>
-                      <Badge 
+                      <Badge
                         variant={
-                          notif.severity === 'high' ? 'destructive' : 
-                          notif.severity === 'medium' ? 'warning' : 
-                          notif.type === 'success' ? 'success' : 'default'
+                          notif.severity === 'high' ? 'destructive' :
+                            notif.severity === 'medium' ? 'warning' :
+                              notif.type === 'success' ? 'success' : 'default'
                         }
                         className="text-xs"
                       >
@@ -495,10 +494,10 @@ export default function AdminDashboard() {
                             loan.status === 'Active'
                               ? 'success'
                               : loan.status === 'Overdue'
-                              ? 'destructive'
-                              : loan.status === 'Pending'
-                              ? 'warning'
-                              : 'default'
+                                ? 'destructive'
+                                : loan.status === 'Pending'
+                                  ? 'warning'
+                                  : 'default'
                           }
                         >
                           {loan.status}

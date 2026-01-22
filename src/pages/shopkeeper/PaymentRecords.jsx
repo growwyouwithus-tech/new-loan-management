@@ -16,7 +16,7 @@ export default function PaymentRecords() {
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState('All')
     const [applicationMode, setApplicationMode] = useState('All')
-    const [shopkeeperFilter, setShopkeeperFilter] = useState('All Shopkeeper')
+
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
 
@@ -82,10 +82,7 @@ export default function PaymentRecords() {
             if (!match) return false;
         }
 
-        // 3. Shopkeeper Filter (Placeholder for now)
-        if (shopkeeperFilter !== 'All Shopkeeper') {
-            // Logic to filter by shopkeeper if data available
-        }
+
 
         // 4. Search Query
         if (searchQuery) {
@@ -187,18 +184,7 @@ export default function PaymentRecords() {
                             </select>
                         </div>
 
-                        {/* Shopkeeper Wise */}
-                        <div>
-                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Shopkeeper wise</label>
-                            <select
-                                className="w-full h-10 px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                value={shopkeeperFilter}
-                                onChange={(e) => setShopkeeperFilter(e.target.value)}
-                            >
-                                <option value="All Shopkeeper">All Shopkeeper</option>
-                                <option value="Individual">Individual</option>
-                            </select>
-                        </div>
+
 
                         {/* Search Box */}
                         <div className="space-y-2 lg:col-span-2">
@@ -304,13 +290,13 @@ export default function PaymentRecords() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                {new Date(loan.appliedDate || loan.createdAt).toLocaleDateString()}
+                                                {new Date(loan.appliedDate || loan.createdAt).toLocaleDateString('en-GB')}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-800">
                                                 ₹{Number(loan.loanAmount || 0).toLocaleString()}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                {new Date(emiStartDate).toLocaleDateString()}
+                                                {new Date(emiStartDate).toLocaleDateString('en-GB')}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
                                                 ₹{emiAmount.toLocaleString()}
@@ -322,7 +308,7 @@ export default function PaymentRecords() {
                                                 {loan.emisRemaining || 0}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                                                {loan.nextDueDate ? new Date(loan.nextDueDate).toLocaleDateString() : 'N/A'}
+                                                {loan.nextDueDate ? new Date(loan.nextDueDate).toLocaleDateString('en-GB') : 'N/A'}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600">
                                                 ₹{Number(loan.totalPenalty || 0).toLocaleString()}

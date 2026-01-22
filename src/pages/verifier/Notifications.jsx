@@ -9,28 +9,28 @@ import loanStore from '../../store/loanStore'
 export default function VerifierNotifications() {
   const { notifications, getRecentNotifications, markAsRead, markAllAsRead, clearForRole, clearNotification, updateNotifications, getPanelsWithNotifications } = notificationStore()
   const { loans, activeLoans } = loanStore()
-  
+
   const [allNotifications, setAllNotifications] = useState([])
-  
+
   useEffect(() => {
     updateNotifications(loans, activeLoans)
   }, [loans, activeLoans, updateNotifications])
-  
+
   useEffect(() => {
     setAllNotifications(getRecentNotifications(50))
   }, [notifications, getRecentNotifications])
-  
+
   const handleNotificationClick = (notification) => {
     markAsRead(notification.id)
     if (notification.type === 'new_loan_application') {
       window.location.href = '/verifier/loan-verifier'
     }
   }
-  
+
   const showClearMessage = (role) => {
     const panelsBefore = getPanelsWithNotifications()
     const clearedCount = panelsBefore[role] || 0
-    
+
     // Create toast message
     const message = document.createElement('div')
     message.className = 'fixed top-20 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm animate-pulse'
@@ -40,17 +40,17 @@ export default function VerifierNotifications() {
         ${clearedCount} notifications cleared from ${role} panel
       </div>
     `
-    
+
     document.body.appendChild(message)
-    
+
     // Remove message after 3 seconds
     setTimeout(() => {
       message.remove()
     }, 3000)
   }
-  
+
   const unreadCount = allNotifications.filter(n => !n.read).length
-  
+
   const getTypeColor = (type) => {
     switch (type) {
       case 'new_loan_application':
@@ -67,7 +67,7 @@ export default function VerifierNotifications() {
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     }
   }
-  
+
   const getTypeIcon = (type) => {
     switch (type) {
       case 'new_loan_application':
@@ -84,7 +84,7 @@ export default function VerifierNotifications() {
         return <Bell className="h-4 w-4" />
     }
   }
-  
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -102,15 +102,15 @@ export default function VerifierNotifications() {
             </Button>
           )}
           <Button onClick={() => {
-              showClearMessage('verifier')
-              clearForRole('verifier')
-            }} variant="destructive" size="sm">
+            showClearMessage('verifier')
+            clearForRole('verifier')
+          }} variant="destructive" size="sm">
             <Trash2 className="h-4 w-4 mr-2" />
             Clear All
           </Button>
         </div>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>All Notifications</CardTitle>
@@ -124,9 +124,8 @@ export default function VerifierNotifications() {
               {allNotifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-all hover:bg-accent ${
-                    !notification.read ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''
-                  }`}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all hover:bg-accent ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1" onClick={() => handleNotificationClick(notification)}>
@@ -142,7 +141,7 @@ export default function VerifierNotifications() {
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>{new Date(notification.timestamp).toLocaleDateString()}</span>
+                          <span>{new Date(notification.timestamp).toLocaleDateString('en-GB')}</span>
                           <span>{new Date(notification.timestamp).toLocaleTimeString()}</span>
                           {notification.loanId && (
                             <Badge variant="outline" className="text-xs">

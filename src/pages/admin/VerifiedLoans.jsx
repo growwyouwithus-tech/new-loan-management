@@ -54,15 +54,15 @@ export default function VerifiedLoans() {
 
   const onSubmit = (data) => {
     setIsLoading(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       let result = [...loans];
-      
+
       if (data.month) {
         result = result.filter(loan => loan.month === data.month);
       }
-      
+
       if (data.fromDate && data.toDate) {
         result = result.filter(loan => {
           const loanDate = new Date(loan.verifiedDate);
@@ -71,11 +71,11 @@ export default function VerifiedLoans() {
           return loanDate >= fromDate && loanDate <= toDate;
         });
       }
-      
+
       if (data.status && data.status !== 'All') {
         result = result.filter(loan => loan.status === data.status);
       }
-      
+
       setFilteredLoans(result);
       setIsLoading(false);
       toast.success(`Found ${result.length} loans matching your criteria`);
@@ -91,7 +91,7 @@ export default function VerifiedLoans() {
   const updateLoanStatus = async (id, newStatus) => {
     try {
       setIsLoading(true);
-      
+
       if (newStatus === 'Approved') {
         await approveLoan(id);
         // Initialize active loans for collections
@@ -105,12 +105,12 @@ export default function VerifiedLoans() {
         await loanStore.getState().updateLoanStatus(id, 'Pending', 'Moved back to pending');
         toast.success('Loan moved to pending successfully!');
       }
-      
+
       // Update selected loan if it's the one being updated
       if (selectedLoan && selectedLoan.id === id) {
         setSelectedLoan(prev => ({ ...prev, status: newStatus }));
       }
-      
+
       setIsLoading(false);
     } catch (error) {
       console.error('Error updating loan status:', error);
@@ -192,13 +192,13 @@ export default function VerifiedLoans() {
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Applied Date</h4>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {new Date(selectedLoan.appliedDate).toLocaleDateString()}
+                      {new Date(selectedLoan.appliedDate).toLocaleDateString('en-GB')}
                     </p>
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Verified Date</h4>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {selectedLoan.verifiedDate ? new Date(selectedLoan.verifiedDate).toLocaleDateString() : 'Not available'}
+                      {selectedLoan.verifiedDate ? new Date(selectedLoan.verifiedDate).toLocaleDateString('en-GB') : 'Not available'}
                     </p>
                   </div>
                   <div>
@@ -266,8 +266,8 @@ export default function VerifiedLoans() {
                     <div className="md:col-span-2">
                       <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Address</h4>
                       <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                        {selectedLoan.guarantor?.address ? 
-                          (typeof selectedLoan.guarantor.address === 'string' ? 
+                        {selectedLoan.guarantor?.address ?
+                          (typeof selectedLoan.guarantor.address === 'string' ?
                             selectedLoan.guarantor.address :
                             `${selectedLoan.guarantor.address.houseNo}, ${selectedLoan.guarantor.address.galiNo}, ${selectedLoan.guarantor.address.colony}, ${selectedLoan.guarantor.address.area}, ${selectedLoan.guarantor.address.city} - ${selectedLoan.guarantor.address.pincode}, ${selectedLoan.guarantor.address.state}`
                           ) : 'Address not available'}
@@ -302,13 +302,13 @@ export default function VerifiedLoans() {
                     <div className="md:col-span-2">
                       <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Address</h4>
                       <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                        {selectedLoan.guarantor2HouseNo ? 
-                          `${selectedLoan.guarantor2HouseNo}, ${selectedLoan.guarantor2GaliNo || ''}, ${selectedLoan.guarantor2Colony || ''}, ${selectedLoan.guarantor2Area || ''}, ${selectedLoan.guarantor2City || ''} - ${selectedLoan.guarantor2Pincode || ''}, ${selectedLoan.guarantor2State || ''}` 
+                        {selectedLoan.guarantor2HouseNo ?
+                          `${selectedLoan.guarantor2HouseNo}, ${selectedLoan.guarantor2GaliNo || ''}, ${selectedLoan.guarantor2Colony || ''}, ${selectedLoan.guarantor2Area || ''}, ${selectedLoan.guarantor2City || ''} - ${selectedLoan.guarantor2Pincode || ''}, ${selectedLoan.guarantor2State || ''}`
                           : 'Address not available'}
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Second Guarantor Documents */}
                   <div className="mt-6">
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Second Guarantor Documents</h4>
@@ -318,9 +318,9 @@ export default function VerifiedLoans() {
                         <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400">Guarantor Photo</h5>
                         <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 flex items-center justify-center">
                           {selectedLoan.guarantor2Photo ? (
-                            <img 
-                              src={selectedLoan.guarantor2Photo} 
-                              alt="Second Guarantor Photo" 
+                            <img
+                              src={selectedLoan.guarantor2Photo}
+                              alt="Second Guarantor Photo"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -334,9 +334,9 @@ export default function VerifiedLoans() {
                         <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400">Aadhar Front</h5>
                         <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 flex items-center justify-center">
                           {selectedLoan.guarantor2AadharFront ? (
-                            <img 
-                              src={selectedLoan.guarantor2AadharFront} 
-                              alt="Second Guarantor Aadhar Front" 
+                            <img
+                              src={selectedLoan.guarantor2AadharFront}
+                              alt="Second Guarantor Aadhar Front"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -350,9 +350,9 @@ export default function VerifiedLoans() {
                         <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400">Aadhar Back</h5>
                         <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 flex items-center justify-center">
                           {selectedLoan.guarantor2AadharBack ? (
-                            <img 
-                              src={selectedLoan.guarantor2AadharBack} 
-                              alt="Second Guarantor Aadhar Back" 
+                            <img
+                              src={selectedLoan.guarantor2AadharBack}
+                              alt="Second Guarantor Aadhar Back"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -366,9 +366,9 @@ export default function VerifiedLoans() {
                         <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400">PAN Card</h5>
                         <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 flex items-center justify-center">
                           {selectedLoan.guarantor2PanFront ? (
-                            <img 
-                              src={selectedLoan.guarantor2PanFront} 
-                              alt="Second Guarantor PAN Card" 
+                            <img
+                              src={selectedLoan.guarantor2PanFront}
+                              alt="Second Guarantor PAN Card"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -392,9 +392,9 @@ export default function VerifiedLoans() {
                       <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Client Photo</h4>
                       <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                         {selectedLoan.clientPhoto ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.clientPhoto)} 
-                            alt="Client Photo" 
+                          <img
+                            src={getImageUrl(selectedLoan.clientPhoto)}
+                            alt="Client Photo"
                             className="max-h-full max-w-full object-contain rounded"
                           />
                         ) : (
@@ -408,9 +408,9 @@ export default function VerifiedLoans() {
                       <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Aadhar Front</h4>
                       <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                         {selectedLoan.clientAadharFront ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.clientAadharFront)} 
-                            alt="Aadhar Front" 
+                          <img
+                            src={getImageUrl(selectedLoan.clientAadharFront)}
+                            alt="Aadhar Front"
                             className="max-h-full max-w-full object-contain rounded"
                           />
                         ) : (
@@ -424,9 +424,9 @@ export default function VerifiedLoans() {
                       <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Aadhar Back</h4>
                       <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                         {selectedLoan.clientAadharBack ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.clientAadharBack)} 
-                            alt="Aadhar Back" 
+                          <img
+                            src={getImageUrl(selectedLoan.clientAadharBack)}
+                            alt="Aadhar Back"
                             className="max-h-full max-w-full object-contain rounded"
                           />
                         ) : (
@@ -440,9 +440,9 @@ export default function VerifiedLoans() {
                       <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">PAN Card</h4>
                       <div className="h-32 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                         {selectedLoan.clientPanFront ? (
-                          <img 
-                            src={getImageUrl(selectedLoan.clientPanFront)} 
-                            alt="PAN Card" 
+                          <img
+                            src={getImageUrl(selectedLoan.clientPanFront)}
+                            alt="PAN Card"
                             className="max-h-full max-w-full object-contain rounded"
                           />
                         ) : (
@@ -461,9 +461,9 @@ export default function VerifiedLoans() {
                         <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400">Guarantor Photo</h5>
                         <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.photo ? (
-                            <img 
-                              src={getImageUrl(selectedLoan.guarantor.photo)} 
-                              alt="Guarantor Photo" 
+                            <img
+                              src={getImageUrl(selectedLoan.guarantor.photo)}
+                              alt="Guarantor Photo"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -477,9 +477,9 @@ export default function VerifiedLoans() {
                         <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400">Aadhar Front</h5>
                         <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.aadharFront ? (
-                            <img 
-                              src={getImageUrl(selectedLoan.guarantor.aadharFront)} 
-                              alt="Guarantor Aadhar Front" 
+                            <img
+                              src={getImageUrl(selectedLoan.guarantor.aadharFront)}
+                              alt="Guarantor Aadhar Front"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -493,9 +493,9 @@ export default function VerifiedLoans() {
                         <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400">Aadhar Back</h5>
                         <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.aadharBack ? (
-                            <img 
-                              src={getImageUrl(selectedLoan.guarantor.aadharBack)} 
-                              alt="Guarantor Aadhar Back" 
+                            <img
+                              src={getImageUrl(selectedLoan.guarantor.aadharBack)}
+                              alt="Guarantor Aadhar Back"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -509,9 +509,9 @@ export default function VerifiedLoans() {
                         <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400">PAN Card</h5>
                         <div className="h-24 bg-gray-50 dark:bg-gray-700 rounded border flex items-center justify-center">
                           {selectedLoan.guarantor?.panFront ? (
-                            <img 
-                              src={getImageUrl(selectedLoan.guarantor.panFront)} 
-                              alt="Guarantor PAN Card" 
+                            <img
+                              src={getImageUrl(selectedLoan.guarantor.panFront)}
+                              alt="Guarantor PAN Card"
                               className="max-h-full max-w-full object-contain rounded"
                             />
                           ) : (
@@ -535,7 +535,7 @@ export default function VerifiedLoans() {
                       <h4 className="text-sm font-medium text-gray-500">Client Call Recording</h4>
                       <div className="mt-1">
                         {selectedLoan.clientCallUrl ? (
-                          <button 
+                          <button
                             onClick={() => handlePlayCall(selectedLoan.clientCallUrl, 'Client')}
                             className="flex items-center text-blue-600 hover:text-blue-800"
                           >
@@ -553,7 +553,7 @@ export default function VerifiedLoans() {
                       <h4 className="text-sm font-medium text-gray-500">Guarantor Call Recording</h4>
                       <div className="mt-1">
                         {selectedLoan.guarantor?.guarantorCallUrl ? (
-                          <button 
+                          <button
                             onClick={() => handlePlayCall(selectedLoan.guarantor.guarantorCallUrl, 'Guarantor')}
                             className="flex items-center text-blue-600 hover:text-blue-800"
                           >
@@ -571,7 +571,7 @@ export default function VerifiedLoans() {
                       <h4 className="text-sm font-medium text-gray-500">Second Guarantor Call Recording</h4>
                       <div className="mt-1">
                         {selectedLoan.guarantor2?.guarantorCallUrl ? (
-                          <button 
+                          <button
                             onClick={() => handlePlayCall(selectedLoan.guarantor2.guarantorCallUrl, 'Second Guarantor')}
                             className="flex items-center text-blue-600 hover:text-blue-800"
                           >
@@ -637,7 +637,7 @@ export default function VerifiedLoans() {
         </div>
       )}
       <h1 className="text-2xl font-bold mb-6">Verified Loans Management</h1>
-      
+
       {/* Filters Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">Filter Loans</h2>
@@ -657,7 +657,7 @@ export default function VerifiedLoans() {
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 From Date
@@ -668,7 +668,7 @@ export default function VerifiedLoans() {
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white p-2"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 To Date
@@ -679,7 +679,7 @@ export default function VerifiedLoans() {
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white p-2"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Status
@@ -695,7 +695,7 @@ export default function VerifiedLoans() {
               </select>
             </div>
           </div>
-          
+
           <div className="flex space-x-4 pt-2">
             <button
               type="submit"
@@ -705,7 +705,7 @@ export default function VerifiedLoans() {
               <Search className="h-4 w-4 mr-2" />
               {isLoading ? 'Filtering...' : 'Filter Loans'}
             </button>
-            
+
             <button
               type="button"
               onClick={handleReset}
@@ -717,7 +717,7 @@ export default function VerifiedLoans() {
           </div>
         </form>
       </div>
-      
+
       {/* Loans Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -777,7 +777,7 @@ export default function VerifiedLoans() {
                           <p className="text-sm text-gray-900 dark:text-white break-words">{loan.statusComment}</p>
                           {loan.commentDate && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {new Date(loan.commentDate).toLocaleDateString('en-IN')}
+                              {new Date(loan.commentDate).toLocaleDateString('en-GB')}
                             </p>
                           )}
                         </div>
@@ -787,31 +787,31 @@ export default function VerifiedLoans() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-2 items-center">
-                      <button
-                        onClick={() => updateLoanStatus(loan.id, 'Pending')}
-                        className={`p-1.5 rounded-md ${loan.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50' : 'text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/30'}`}
-                        title="Mark as Pending"
-                        disabled={loan.status === 'Pending'}
-                      >
-                        <Clock className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => updateLoanStatus(loan.id, 'Rejected')}
-                        className={`p-1.5 rounded-md ${loan.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/50' : 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30'}`}
-                        title="Reject Loan"
-                        disabled={loan.status === 'Rejected'}
-                      >
-                        <ThumbsDown className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => updateLoanStatus(loan.id, 'Approved')}
-                        className={`p-1.5 rounded-md ${loan.status === 'Approved' ? '!bg-green-100 !text-green-700 dark:!bg-green-900/50' : '!text-green-600 hover:bg-green-50 dark:!text-green-400 dark:hover:bg-green-900/30'}`}
-                        title="Approve Loan"
-                        disabled={loan.status === 'Approved'}
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                        
+                        <button
+                          onClick={() => updateLoanStatus(loan.id, 'Pending')}
+                          className={`p-1.5 rounded-md ${loan.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50' : 'text-yellow-600 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-900/30'}`}
+                          title="Mark as Pending"
+                          disabled={loan.status === 'Pending'}
+                        >
+                          <Clock className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => updateLoanStatus(loan.id, 'Rejected')}
+                          className={`p-1.5 rounded-md ${loan.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/50' : 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30'}`}
+                          title="Reject Loan"
+                          disabled={loan.status === 'Rejected'}
+                        >
+                          <ThumbsDown className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => updateLoanStatus(loan.id, 'Approved')}
+                          className={`p-1.5 rounded-md ${loan.status === 'Approved' ? '!bg-green-100 !text-green-700 dark:!bg-green-900/50' : '!text-green-600 hover:bg-green-50 dark:!text-green-400 dark:hover:bg-green-900/30'}`}
+                          title="Approve Loan"
+                          disabled={loan.status === 'Approved'}
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+
                         {/* Delete Button */}
                         <button
                           onClick={() => deleteLoan(loan.id)}
@@ -842,7 +842,7 @@ export default function VerifiedLoans() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">{currentCall.type} Call Recording</h3>
-              <button 
+              <button
                 onClick={() => {
                   if (audioRef.current) {
                     audioRef.current.pause();
@@ -855,15 +855,15 @@ export default function VerifiedLoans() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="flex flex-col items-center justify-center p-4">
-              <audio 
+              <audio
                 ref={audioRef}
-                src={currentCall.url} 
+                src={currentCall.url}
                 onEnded={() => setIsPlaying(false)}
                 className="w-full mb-4"
               />
-              
+
               <div className="flex items-center space-x-4">
                 <button
                   onClick={togglePlayPause}

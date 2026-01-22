@@ -360,7 +360,7 @@ export default function BorrowerManagement() {
                                   const d = new Date(p.dueDate);
                                   let dateLabel = 'N/A';
                                   if (!isNaN(d.getTime())) {
-                                    dateLabel = d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+                                    dateLabel = d.toLocaleDateString('en-GB');
                                   }
                                   return (
                                     <tr key={idx}>

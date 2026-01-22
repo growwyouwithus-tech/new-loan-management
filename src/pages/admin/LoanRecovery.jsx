@@ -29,11 +29,11 @@ export default function LoanRecovery() {
     const overdue = loans.filter(loan => {
       if (loan.status === 'Defaulted') return false
       if (!loan.nextDueDate) return false
-      
+
       const dueDate = new Date(loan.nextDueDate)
       const today = new Date()
       const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24))
-      
+
       return daysOverdue > 7 // Loans overdue by more than 7 days
     })
 
@@ -42,13 +42,13 @@ export default function LoanRecovery() {
   }, [loans])
 
   // Filter loans based on search
-  const filteredDefaultedLoans = defaultedLoans.filter(loan => 
+  const filteredDefaultedLoans = defaultedLoans.filter(loan =>
     loan.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     loan.loanId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     loan.customerPhone?.includes(searchTerm)
   )
 
-  const filteredOverdueLoans = overdueLoans.filter(loan => 
+  const filteredOverdueLoans = overdueLoans.filter(loan =>
     loan.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     loan.loanId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     loan.customerPhone?.includes(searchTerm)
@@ -267,7 +267,7 @@ export default function LoanRecovery() {
                       </td>
                       <td className="p-2">
                         <span className="text-sm text-gray-500">
-                          {new Date(loan.defaultedDate || loan.updatedAt).toLocaleDateString()}
+                          {new Date(loan.defaultedDate || loan.updatedAt).toLocaleDateString('en-GB')}
                         </span>
                       </td>
                       <td className="p-2">
@@ -437,7 +437,7 @@ export default function LoanRecovery() {
                   ×
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -465,17 +465,17 @@ export default function LoanRecovery() {
                     <p className="font-semibold text-red-600">₹{calculateOutstandingAmount(selectedLoan).toLocaleString()}</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Customer Address</label>
                   <p className="font-semibold">
-                    {selectedLoan.customerAddress ? 
-                      `${selectedLoan.customerAddress.houseNo}, ${selectedLoan.customerAddress.colony}, ${selectedLoan.customerAddress.city} - ${selectedLoan.customerAddress.pincode}` 
+                    {selectedLoan.customerAddress ?
+                      `${selectedLoan.customerAddress.houseNo}, ${selectedLoan.customerAddress.colony}, ${selectedLoan.customerAddress.city} - ${selectedLoan.customerAddress.pincode}`
                       : 'Address not available'
                     }
                   </p>
                 </div>
-                
+
                 <div className="flex gap-2 pt-4">
                   <Button onClick={() => {
                     setShowDetailsModal(false)
@@ -508,18 +508,18 @@ export default function LoanRecovery() {
                   ×
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Customer</label>
                   <p className="font-semibold">{selectedLoan.clientName}</p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Outstanding Amount</label>
                   <p className="font-semibold text-red-600">₹{calculateOutstandingAmount(selectedLoan).toLocaleString()}</p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Recovery Amount *</label>
                   <Input
@@ -529,7 +529,7 @@ export default function LoanRecovery() {
                     placeholder="Enter recovery amount"
                   />
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Payment Method</label>
                   <select
@@ -543,7 +543,7 @@ export default function LoanRecovery() {
                     <option value="online">Online Payment</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Recovery Notes</label>
                   <textarea
@@ -554,7 +554,7 @@ export default function LoanRecovery() {
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Button onClick={submitRecovery}>
                     Record Recovery

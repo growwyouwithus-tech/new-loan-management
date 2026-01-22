@@ -150,6 +150,9 @@ export default function CollectPayment() {
     }
   }
 
+  // Calculate today for date restrictions
+  const today = new Date().toISOString().split('T')[0]
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header - Mobile Optimized */}
@@ -352,7 +355,7 @@ export default function CollectPayment() {
 
                 <div>
                   <label className="text-xs md:text-sm font-semibold">Payment Date</label>
-                  <Input {...register('date')} type="date" />
+                  <Input {...register('date')} type="date" min={today} />
                 </div>
 
                 <div>

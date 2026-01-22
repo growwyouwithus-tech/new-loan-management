@@ -9,19 +9,19 @@ const loanStore = create(
     (set, get) => ({
       // All loans in the system
       loans: [],
-      
+
       // Pending loans (submitted by shopkeeper, waiting for verification)
       pendingLoans: [],
-      
+
       // Verified loans (verified by admin, waiting for final approval)
       verifiedLoans: [],
-      
+
       // Approved loans (approved by admin, ready for collection)
       approvedLoans: [],
-      
+
       // Active loans (currently being collected)
       activeLoans: [],
-      
+
       // Completed loans
       completedLoans: [],
 
@@ -35,24 +35,25 @@ const loanStore = create(
         try {
           const response = await loanService.getAllLoans();
           const loans = response.loans || response;
-          
+
           // Categorize loans by status
-          const pendingLoans = loans.filter(l => l.status === 'Pending');
-          const verifiedLoans = loans.filter(l => l.status === 'Verified');
-          const approvedLoans = loans.filter(l => l.status === 'Approved');
-          const activeLoans = loans.filter(l => l.status === 'Active');
-          const completedLoans = loans.filter(l => l.status === 'Paid' || l.status === 'Completed');
-          
-          set({ 
+          // Categorize loans by status (case-insensitive)
+          const pendingLoans = loans.filter(l => (l.status || '').toLowerCase() === 'pending');
+          const verifiedLoans = loans.filter(l => (l.status || '').toLowerCase() === 'verified');
+          const approvedLoans = loans.filter(l => (l.status || '').toLowerCase() === 'approved');
+          const activeLoans = loans.filter(l => (l.status || '').toLowerCase() === 'active');
+          const completedLoans = loans.filter(l => ['paid', 'completed'].includes((l.status || '').toLowerCase()));
+
+          set({
             loans,
             pendingLoans,
             verifiedLoans,
             approvedLoans,
             activeLoans,
             completedLoans,
-            loading: false 
+            loading: false
           });
-          
+
           return loans;
         } catch (error) {
           console.error('Failed to fetch loans:', error);
@@ -65,13 +66,13 @@ const loanStore = create(
       addLoanApplication: async (loanData) => {
         try {
           console.log('Submitting loan application:', loanData);
-          
+
           // Save to backend first
           const response = await loanService.createLoan(loanData);
           console.log('Backend response:', response);
-          
+
           const newLoan = response.loan || response;
-          
+
           // Update local store with backend response
           set((state) => ({
             loans: [...state.loans, newLoan],
@@ -103,26 +104,27 @@ const loanStore = create(
         try {
           // Update in backend first
           const updatedLoan = await loanService.updateLoanStatus(loanId, newStatus, comment);
-          
+
           // Update local store with proper categorization
           set((state) => {
-            const updatedLoans = state.loans.map(l => 
+            const updatedLoans = state.loans.map(l =>
               (l.id === loanId || l._id === loanId) ? updatedLoan : l
             );
-            
+
             // Remove from all categories first
             const filteredPending = state.pendingLoans.filter(l => l.id !== loanId && l._id !== loanId);
             const filteredVerified = state.verifiedLoans.filter(l => l.id !== loanId && l._id !== loanId);
             const filteredApproved = state.approvedLoans.filter(l => l.id !== loanId && l._id !== loanId);
-            
+
             // Add to appropriate category based on new status
+            const statusLower = newStatus.toLowerCase();
             return {
               loans: updatedLoans,
-              pendingLoans: newStatus === 'Pending' ? [...filteredPending, updatedLoan] : filteredPending,
-              verifiedLoans: newStatus === 'Verified' ? [...filteredVerified, updatedLoan] : filteredVerified,
-              approvedLoans: newStatus === 'Approved' ? [...filteredApproved, updatedLoan] : filteredApproved,
-              activeLoans: newStatus === 'Active' ? [...state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan] : state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId),
-              completedLoans: (newStatus === 'Paid' || newStatus === 'Completed') ? [...state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan] : state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId),
+              pendingLoans: statusLower === 'pending' ? [...filteredPending, updatedLoan] : filteredPending,
+              verifiedLoans: statusLower === 'verified' ? [...filteredVerified, updatedLoan] : filteredVerified,
+              approvedLoans: statusLower === 'approved' ? [...filteredApproved, updatedLoan] : filteredApproved,
+              activeLoans: statusLower === 'active' ? [...state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan] : state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId),
+              completedLoans: (statusLower === 'paid' || statusLower === 'completed') ? [...state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId), updatedLoan] : state.completedLoans.filter(l => l.id !== loanId && l._id !== loanId),
             };
           });
 
@@ -219,24 +221,24 @@ const loanStore = create(
         try {
           console.log('Collecting payment for loan:', loanId);
           console.log('Payment data:', paymentData);
-          
+
           // Save payment to backend first
           const response = await loanService.collectPayment(loanId, paymentData);
           console.log('Backend response:', response);
-          
+
           // Extract loan from response (backend returns { message, loan, payment })
           const updatedLoan = response.loan || response;
-          
+
           // Update local store
           set((state) => {
-            const updatedLoans = state.loans.map(l => 
+            const updatedLoans = state.loans.map(l =>
               (l.id === loanId || l._id === loanId || String(l._id) === String(loanId)) ? updatedLoan : l
             );
-            
+
             return {
               loans: updatedLoans,
               activeLoans: state.activeLoans.some(l => l.id === loanId || l._id === loanId || String(l._id) === String(loanId))
-                ? updatedLoan.status === 'Paid' 
+                ? updatedLoan.status === 'Paid'
                   ? state.activeLoans.filter(l => l.id !== loanId && l._id !== loanId && String(l._id) !== String(loanId))
                   : state.activeLoans.map(l => (l.id === loanId || l._id === loanId || String(l._id) === String(loanId)) ? updatedLoan : l)
                 : state.activeLoans,
@@ -260,7 +262,7 @@ const loanStore = create(
           // Record payment for EMI Management synchronization
           // EMI number should be the current paid count (emisPaid already incremented by backend)
           const currentEmiNumber = updatedLoan.emisPaid || 1;
-          
+
           get().recordPayment({
             id: `PAY${Date.now()}`,
             loanId: updatedLoan.id || updatedLoan._id,
@@ -298,7 +300,7 @@ const loanStore = create(
       initializeActiveLoans: () => {
         const approvedLoans = get().approvedLoans;
         console.log('initializeActiveLoans - Approved Loans:', approvedLoans);
-        
+
         if (approvedLoans.length === 0) {
           console.log('No approved loans to initialize');
           return;
@@ -307,7 +309,7 @@ const loanStore = create(
         const activatedLoans = approvedLoans.map(loan => {
           // Use emiStartDate if available, otherwise use appliedDate, otherwise calculate 30 days from now
           const firstEmiDate = loan.emiStartDate || loan.appliedDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          
+
           return {
             ...loan,
             status: 'Active',
@@ -323,17 +325,17 @@ const loanStore = create(
           // Filter out loans that are already in activeLoans to avoid duplicates
           const existingActiveLoanIds = state.activeLoans.map(loan => loan.id);
           const newActiveLoans = activatedLoans.filter(loan => !existingActiveLoanIds.includes(loan.id));
-          
+
           console.log('Existing Active Loan IDs:', existingActiveLoanIds);
           console.log('New Active Loans to add:', newActiveLoans);
-          
+
           // Update main loans array with new status
-          const updatedLoans = state.loans.map(loan => 
-            activatedLoans.find(al => al.id === loan.id) 
+          const updatedLoans = state.loans.map(loan =>
+            activatedLoans.find(al => al.id === loan.id)
               ? { ...loan, status: 'Active' }
               : loan
           );
-          
+
           return {
             loans: updatedLoans,
             activeLoans: [...state.activeLoans, ...newActiveLoans],
@@ -437,17 +439,17 @@ const loanStore = create(
       checkAndApplyPenalties: () => {
         const currentDate = new Date();
         const loans = get().loans.filter(l => l.status === 'Active' && l.nextDueDate);
-        
+
         loans.forEach(loan => {
           const dueDate = new Date(loan.nextDueDate);
           // Check if current date is past due date and it's after 12 AM
           if (currentDate > dueDate && currentDate.getHours() >= 0) {
             // Check if penalty already applied for this due date
-            const penaltyAlreadyApplied = loan.penalties?.some(p => 
-              p.appliedDate === currentDate.toISOString().split('T')[0] && 
+            const penaltyAlreadyApplied = loan.penalties?.some(p =>
+              p.appliedDate === currentDate.toISOString().split('T')[0] &&
               p.reason === 'EMI Overdue'
             );
-            
+
             if (!penaltyAlreadyApplied) {
               get().applyPenalty(loan.id, 500, 'EMI Overdue');
             }

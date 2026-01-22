@@ -33,8 +33,8 @@ const CustomSelect = ({ value, onChange, options, className = '', ...props }) =>
 
 // Simple Label component since it's not in the UI components
 const Label = ({ children, htmlFor, className }) => (
-  <label 
-    htmlFor={htmlFor} 
+  <label
+    htmlFor={htmlFor}
     className={`block text-sm font-medium text-gray-700 mb-1 ${className || ''}`}
   >
     {children}
@@ -53,9 +53,9 @@ const PopoverContent = ({ children, className }) => (
 // Simple Calendar component
 const Calendar = ({ selected, onSelect, className }) => (
   <div className={`bg-white p-2 border rounded ${className || ''}`}>
-    <input 
-      type="date" 
-      value={selected ? format(selected, 'yyyy-MM-dd') : ''} 
+    <input
+      type="date"
+      value={selected ? format(selected, 'yyyy-MM-dd') : ''}
       onChange={(e) => onSelect(e.target.valueAsDate)}
       className="w-full p-2 border rounded"
     />
@@ -76,14 +76,14 @@ export default function KYCVerification() {
     aadharNumber: '',
     dateOfBirth: '',
     gender: '',
-    
+
     // Section 2: Business Details
     shopName: '',
     businessStartDate: '',
     gstNumber: '',
     udyamNumber: '',
     tradeLicenseNumber: '',
-    
+
     // Section 3: Address
     fullAddress: '',
     area: '',
@@ -91,26 +91,26 @@ export default function KYCVerification() {
     district: '',
     state: '',
     pincode: '',
-    
+
     // Section 4: Owner Identity Documents
     aadharFront: null,
     aadharBack: null,
     panCard: null,
     selfiePhoto: null,
     signature: null,
-    
+
     // Section 5: Shop Proof Documents
     shopPhotoOutside: null,
     shopPhotoInside: null,
     electricityBill: null,
     tradeLicenseDoc: null,
-    
+
     // Section 6: Bank Details
     accountNumber: '',
     ifscCode: '',
     accountHolderName: '',
     bankDocument: null,
-    
+
     // Section 7: Verification
     verificationStatus: 'pending',
     rejectReason: '',
@@ -119,7 +119,7 @@ export default function KYCVerification() {
   });
 
   const fileInputRefs = useRef({});
-  
+
   const resetForm = () => {
     setFormData({
       fullName: '',
@@ -158,17 +158,17 @@ export default function KYCVerification() {
       verifiedBy: '',
       verificationDate: ''
     });
-    
+
     // Clear file input values
     Object.keys(fileInputRefs.current).forEach(key => {
       if (fileInputRefs.current[key]) {
         fileInputRefs.current[key].value = '';
       }
     });
-    
+
     setCurrentSection(1);
   };
-  
+
   const handleFileChange = (e, field) => {
     const file = e.target.files[0];
     if (file) {
@@ -198,7 +198,7 @@ export default function KYCVerification() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Add the new KYC application to the list
     const newKYC = {
       id: Date.now(),
@@ -206,9 +206,9 @@ export default function KYCVerification() {
       submissionDate: new Date().toISOString(),
       verificationStatus: 'pending'
     };
-    
+
     setKycRequests(prev => [newKYC, ...prev]);
-    
+
     // Reset form
     resetForm();
     setIsKYCModalOpen(false);
@@ -217,7 +217,7 @@ export default function KYCVerification() {
 
   const validateSection = (section) => {
     const errors = [];
-    
+
     // Section 1: Personal Details
     if (section === 1) {
       if (!formData.fullName?.trim()) errors.push('Full Name is required');
@@ -233,7 +233,7 @@ export default function KYCVerification() {
       if (!formData.dateOfBirth) errors.push('Date of Birth is required');
       if (!formData.gender) errors.push('Gender is required');
     }
-    
+
     // Section 2: Business Details
     else if (section === 2) {
       if (!formData.shopName?.trim()) errors.push('Shop Name is required');
@@ -245,7 +245,7 @@ export default function KYCVerification() {
         errors.push('Valid Udyam Registration Number is required (format: UDYAM-XX-XX-XXXXXXX)');
       }
     }
-    
+
     // Section 3: Address
     else if (section === 3) {
       if (!formData.fullAddress?.trim()) errors.push('Full Address is required');
@@ -255,7 +255,7 @@ export default function KYCVerification() {
       if (!formData.state?.trim()) errors.push('State is required');
       if (!/^\d{6}$/.test(formData.pincode)) errors.push('Valid 6-digit Pincode is required');
     }
-    
+
     // Section 4: Owner Identity Documents
     else if (section === 4) {
       if (!formData.aadharFront) errors.push('Aadhar Front is required');
@@ -263,14 +263,14 @@ export default function KYCVerification() {
       if (!formData.panCard) errors.push('PAN Card is required');
       if (!formData.signature) errors.push('Signature is required');
     }
-    
+
     // Section 5: Shop Proof Documents
     else if (section === 5) {
       if (!formData.shopPhotoOutside) errors.push('Shop Outside Photo is required');
       if (!formData.shopPhotoInside) errors.push('Shop Inside Photo is required');
       if (!formData.electricityBill) errors.push('Electricity Bill is required');
     }
-    
+
     // Section 6: Bank Details
     else if (section === 6) {
       // Validate account number (only numbers, 9-18 digits)
@@ -279,41 +279,41 @@ export default function KYCVerification() {
       } else if (!/^\d{9,18}$/.test(formData.accountNumber.trim())) {
         errors.push('Account Number must contain 9 to 18 digits only');
       }
-      
+
       // Validate IFSC Code
       if (!formData.ifscCode?.trim()) {
         errors.push('IFSC Code is required');
       } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(formData.ifscCode.trim())) {
         errors.push('Please enter a valid IFSC Code (e.g., HDFC0001234)');
       }
-      
+
       // Validate account holder name
       if (!formData.accountHolderName?.trim()) {
         errors.push('Account Holder Name is required');
       }
-      
+
       // Validate bank document
       if (!formData.bankDocument) {
         errors.push('Bank Passbook or Cancelled Cheque is required');
       }
-      
+
       // Check if account holder is at least 18 years old
       if (formData.dateOfBirth) {
         const dob = new Date(formData.dateOfBirth);
         const today = new Date();
         let age = today.getFullYear() - dob.getFullYear();
         const monthDiff = today.getMonth() - dob.getMonth();
-        
+
         if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
           age--;
         }
-        
+
         if (age < 18) {
           errors.push('Account holder must be at least 18 years old');
         }
       }
     }
-    
+
     if (errors.length > 0) {
       errors.forEach(error => {
         toast.error(error, { position: 'top-right', autoClose: 5000 });
@@ -328,7 +328,7 @@ export default function KYCVerification() {
       setCurrentSection(prev => Math.min(prev + 1, 6));
     }
   };
-  
+
   const prevSection = () => setCurrentSection(prev => Math.max(prev - 1, 1));
 
   const [kycRequests, setKycRequests] = useState([
@@ -457,18 +457,17 @@ export default function KYCVerification() {
     {
       accessorKey: 'businessStartDate',
       header: 'Business Since',
-      cell: ({ row }) => row.original.businessStartDate ? new Date(row.original.businessStartDate).toLocaleDateString() : 'N/A',
+      cell: ({ row }) => row.original.businessStartDate ? new Date(row.original.businessStartDate).toLocaleDateString('en-GB') : 'N/A',
       size: 120
     },
     {
       accessorKey: 'verificationStatus',
       header: 'Status',
       cell: ({ row }) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          row.original.verificationStatus === 'verified' ? '!bg-green-100 !text-green-800' :
-          row.original.verificationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-          'bg-yellow-100 text-yellow-800'
-        }`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${row.original.verificationStatus === 'verified' ? '!bg-green-100 !text-green-800' :
+            row.original.verificationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+              'bg-yellow-100 text-yellow-800'
+          }`}>
           {row.original.verificationStatus || 'pending'}
         </span>
       ),
@@ -485,8 +484,8 @@ export default function KYCVerification() {
       header: 'Actions',
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             variant="outline"
             onClick={() => handleViewKYC(row.original)}
           >
@@ -524,16 +523,16 @@ export default function KYCVerification() {
   };
 
   const handleVerify = (id, status, rejectReason = '') => {
-    setKycRequests(prev => 
-      prev.map(k => 
-        k.id === id 
-          ? { 
-              ...k, 
-              verificationStatus: status,
-              rejectReason,
-              verificationDate: new Date().toISOString(),
-              verifiedBy: 'Admin' // You can replace with actual admin user
-            } 
+    setKycRequests(prev =>
+      prev.map(k =>
+        k.id === id
+          ? {
+            ...k,
+            verificationStatus: status,
+            rejectReason,
+            verificationDate: new Date().toISOString(),
+            verifiedBy: 'Admin' // You can replace with actual admin user
+          }
           : k
       )
     );
@@ -556,7 +555,7 @@ export default function KYCVerification() {
           Shop KYC
         </Button>
       </div>
-      
+
       <Table columns={columns} data={kycRequests} />
 
       {/* KYC Details View Modal */}
@@ -566,14 +565,14 @@ export default function KYCVerification() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b">
                 <h2 className="text-2xl font-bold">KYC Details - {selectedKYC.shopName || 'N/A'}</h2>
-                <button 
+                <button
                   onClick={() => setIsViewModalOpen(false)}
                   className="text-gray-500 hover:text-gray-700 p-1"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
-              
+
               <div className="space-y-6">
                 {/* Personal Details */}
                 <div className="border rounded-lg p-4">
@@ -588,7 +587,7 @@ export default function KYCVerification() {
                     <DetailItem label="Gender" value={selectedKYC.gender} />
                   </div>
                 </div>
-                
+
                 {/* Business Details */}
                 <div className="border rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">2. Business Details</h3>
@@ -600,7 +599,7 @@ export default function KYCVerification() {
                     <DetailItem label="Trade License Number" value={selectedKYC.tradeLicenseNumber || 'N/A'} />
                   </div>
                 </div>
-                
+
                 {/* Address */}
                 <div className="border rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">3. Address Details</h3>
@@ -617,7 +616,7 @@ export default function KYCVerification() {
                 {/* Document Uploads */}
                 <div className="border rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">4. Documents</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Aadhar Front & Back */}
                     <div className="space-y-2">
@@ -626,9 +625,9 @@ export default function KYCVerification() {
                         <div className="border rounded p-2">
                           <p className="text-sm text-gray-500 mb-1">Front</p>
                           {selectedKYC.aadharFront ? (
-                            <img 
-                              src={selectedKYC.aadharFront} 
-                              alt="Aadhar Front" 
+                            <img
+                              src={selectedKYC.aadharFront}
+                              alt="Aadhar Front"
                               className="w-full h-40 object-contain border rounded"
                             />
                           ) : (
@@ -640,9 +639,9 @@ export default function KYCVerification() {
                         <div className="border rounded p-2">
                           <p className="text-sm text-gray-500 mb-1">Back</p>
                           {selectedKYC.aadharBack ? (
-                            <img 
-                              src={selectedKYC.aadharBack} 
-                              alt="Aadhar Back" 
+                            <img
+                              src={selectedKYC.aadharBack}
+                              alt="Aadhar Back"
                               className="w-full h-40 object-contain border rounded"
                             />
                           ) : (
@@ -659,9 +658,9 @@ export default function KYCVerification() {
                       <h4 className="font-medium">PAN Card</h4>
                       <div className="h-48 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedKYC.panCard ? (
-                          <img 
-                            src={selectedKYC.panCard} 
-                            alt="PAN Card" 
+                          <img
+                            src={selectedKYC.panCard}
+                            alt="PAN Card"
                             className="max-h-full max-w-full object-contain"
                           />
                         ) : (
@@ -670,13 +669,13 @@ export default function KYCVerification() {
                       </div>
                     </div>
 
-<div className="space-y-2">
+                    <div className="space-y-2">
                       <h4 className="font-medium">Signature</h4>
                       <div className="h-48 bg-gray-50 rounded border flex items-center justify-center">
                         {selectedKYC.signature ? (
-                          <img 
-                            src={selectedKYC.signature} 
-                            alt="Signature" 
+                          <img
+                            src={selectedKYC.signature}
+                            alt="Signature"
                             className="max-h-full max-w-full object-contain"
                           />
                         ) : (
@@ -693,9 +692,9 @@ export default function KYCVerification() {
                           <p className="text-sm text-gray-500 mb-1">Outside View</p>
                           <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                             {selectedKYC.shopPhotoOutside ? (
-                              <img 
-                                src={selectedKYC.shopPhotoOutside} 
-                                alt="Shop Outside" 
+                              <img
+                                src={selectedKYC.shopPhotoOutside}
+                                alt="Shop Outside"
                                 className="max-h-full max-w-full object-contain"
                               />
                             ) : (
@@ -707,9 +706,9 @@ export default function KYCVerification() {
                           <p className="text-sm text-gray-500 mb-1">Inside View</p>
                           <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                             {selectedKYC.shopPhotoInside ? (
-                              <img 
-                                src={selectedKYC.shopPhotoInside} 
-                                alt="Shop Inside" 
+                              <img
+                                src={selectedKYC.shopPhotoInside}
+                                alt="Shop Inside"
                                 className="max-h-full max-w-full object-contain"
                               />
                             ) : (
@@ -726,9 +725,9 @@ export default function KYCVerification() {
                         <h4 className="font-medium">Bank Document (Passbook/Cheque)</h4>
                         <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedKYC.bankDocument ? (
-                            <img 
-                              src={selectedKYC.bankDocument} 
-                              alt="Bank Document" 
+                            <img
+                              src={selectedKYC.bankDocument}
+                              alt="Bank Document"
                               className="max-h-full max-w-full object-contain"
                             />
                           ) : (
@@ -736,14 +735,14 @@ export default function KYCVerification() {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <h4 className="font-medium">Electricity Bill</h4>
                         <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedKYC.electricityBill ? (
-                            <img 
-                              src={selectedKYC.electricityBill} 
-                              alt="Electricity Bill" 
+                            <img
+                              src={selectedKYC.electricityBill}
+                              alt="Electricity Bill"
                               className="max-h-full max-w-full object-contain"
                             />
                           ) : (
@@ -758,9 +757,9 @@ export default function KYCVerification() {
                         <h4 className="font-medium">Trade License / GST Certificate</h4>
                         <div className="h-32 bg-gray-50 rounded border flex items-center justify-center">
                           {selectedKYC.tradeLicenseDoc ? (
-                            <img 
-                              src={selectedKYC.tradeLicenseDoc} 
-                              alt="Trade License" 
+                            <img
+                              src={selectedKYC.tradeLicenseDoc}
+                              alt="Trade License"
                               className="max-h-full max-w-full object-contain"
                             />
                           ) : (
@@ -771,7 +770,7 @@ export default function KYCVerification() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Bank Details */}
                 <div className="border rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">5. Bank Details</h3>
@@ -781,36 +780,35 @@ export default function KYCVerification() {
                     <DetailItem label="Account Holder Name" value={selectedKYC.accountHolderName} />
                   </div>
                 </div>
-                
+
                 {/* Verification Status */}
                 <div className="border rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-4 border-b pb-2">6. Verification Status</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DetailItem 
-                      label="Status" 
+                    <DetailItem
+                      label="Status"
                       value={
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          selectedKYC.verificationStatus === 'verified' ? '!bg-green-100 !text-green-800' :
-                          selectedKYC.verificationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${selectedKYC.verificationStatus === 'verified' ? '!bg-green-100 !text-green-800' :
+                            selectedKYC.verificationStatus === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {selectedKYC.verificationStatus ? selectedKYC.verificationStatus.toUpperCase() : 'PENDING'}
                         </span>
-                      } 
+                      }
                     />
                     {selectedKYC.rejectReason && (
                       <DetailItem label="Rejection Reason" value={selectedKYC.rejectReason} className="text-red-600 font-medium" />
                     )}
                     {selectedKYC.verificationDate && (
-                      <DetailItem 
-                        label="Verification Date" 
+                      <DetailItem
+                        label="Verification Date"
                         value={new Date(selectedKYC.verificationDate).toLocaleString('en-IN', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
-                        })} 
+                        })}
                       />
                     )}
                     {selectedKYC.verifiedBy && (
@@ -819,7 +817,7 @@ export default function KYCVerification() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-6 flex justify-end sticky bottom-0 bg-white pt-4 border-t">
                 <Button
                   variant="outline"
@@ -836,7 +834,7 @@ export default function KYCVerification() {
 
       {/* KYC Form Modal */}
       {isKYCModalOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-[1000] flex items-start justify-center p-4 overflow-y-auto"
           style={{
             position: 'fixed',
@@ -851,7 +849,7 @@ export default function KYCVerification() {
           }}
           onClick={handleCloseModal}
         >
-          <div 
+          <div
             className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
             style={{
               position: 'relative',
@@ -864,7 +862,7 @@ export default function KYCVerification() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Shop KYC Verification</h2>
-                <button 
+                <button
                   onClick={handleCloseModal}
                   className="text-gray-500 hover:text-gray-700"
                   aria-label="Close"
@@ -872,16 +870,16 @@ export default function KYCVerification() {
                   <X className="h-6 w-6" />
                 </button>
               </div>
-              
+
               {/* Progress Steps */}
               <div className="mb-6">
                 <div className="flex justify-between mb-2">
                   {[1, 2, 3, 4, 5, 6].map((step) => (
-                    <div 
+                    <div
                       key={step}
                       className="flex flex-col items-center flex-1"
                     >
-                      <div 
+                      <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${currentSection >= step ? 'bg-[#25D366]' : 'bg-gray-300'}`}
                       >
                         {step}
@@ -910,64 +908,64 @@ export default function KYCVerification() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label>Full Name *</Label>
-                        <Input 
-                          name="fullName" 
-                          value={formData.fullName} 
+                        <Input
+                          name="fullName"
+                          value={formData.fullName}
                           onChange={handleInputChange}
                           minLength={2}
-                          required 
+                          required
                         />
                       </div>
                       <div>
                         <Label>Father's Name *</Label>
-                        <Input 
-                          name="fatherName" 
-                          value={formData.fatherName} 
+                        <Input
+                          name="fatherName"
+                          value={formData.fatherName}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div>
                         <Label>Mobile Number *</Label>
-                        <Input 
-                          name="mobileNumber" 
-                          type="tel" 
+                        <Input
+                          name="mobileNumber"
+                          type="tel"
                           pattern="[0-9]{10}"
                           maxLength={10}
-                          value={formData.mobileNumber} 
+                          value={formData.mobileNumber}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div>
                         <Label>Alternate Number</Label>
-                        <Input 
-                          name="alternateNumber" 
-                          type="tel" 
+                        <Input
+                          name="alternateNumber"
+                          type="tel"
                           pattern="[0-9]{10}"
                           maxLength={10}
-                          value={formData.alternateNumber} 
+                          value={formData.alternateNumber}
                           onChange={handleInputChange}
                         />
                       </div>
                       <div>
                         <Label>Aadhar Number *</Label>
-                        <Input 
-                          name="aadharNumber" 
+                        <Input
+                          name="aadharNumber"
                           type="text"
                           pattern="[0-9]{12}"
                           maxLength={12}
-                          value={formData.aadharNumber} 
+                          value={formData.aadharNumber}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div>
                         <Label>Date of Birth *</Label>
-                        <Input 
-                          name="dateOfBirth" 
-                          type="date" 
-                          value={formData.dateOfBirth} 
+                        <Input
+                          name="dateOfBirth"
+                          type="date"
+                          value={formData.dateOfBirth}
                           onChange={(e) => {
                             const selectedDate = e.target.value;
                             // Calculate age
@@ -975,11 +973,11 @@ export default function KYCVerification() {
                             const birthDate = new Date(selectedDate);
                             let age = today.getFullYear() - birthDate.getFullYear();
                             const monthDiff = today.getMonth() - birthDate.getMonth();
-                            
+
                             if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                               age--;
                             }
-                            
+
                             if (age < 18) {
                               toast.error('You must be at least 18 years old', { position: 'top-right' });
                             } else {
@@ -991,7 +989,7 @@ export default function KYCVerification() {
                             const minAgeDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
                             return minAgeDate.toISOString().split('T')[0];
                           })()}
-                          required 
+                          required
                         />
                         <p className="text-xs text-gray-500 mt-1">Must be at least 18 years old</p>
                       </div>
@@ -1000,7 +998,7 @@ export default function KYCVerification() {
                         <CustomSelect
                           name="gender"
                           value={formData.gender}
-                          onChange={(e) => setFormData(prev => ({...prev, gender: e.target.value}))}
+                          onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                           options={[
                             { value: '', label: 'Select gender' },
                             { value: 'male', label: 'Male' },
@@ -1021,44 +1019,44 @@ export default function KYCVerification() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label>Shop/Business Name *</Label>
-                        <Input 
-                          name="shopName" 
-                          value={formData.shopName} 
+                        <Input
+                          name="shopName"
+                          value={formData.shopName}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div>
                         <Label>Business Start Date *</Label>
-                        <Input 
-                          name="businessStartDate" 
-                          type="month" 
-                          value={formData.businessStartDate} 
+                        <Input
+                          name="businessStartDate"
+                          type="month"
+                          value={formData.businessStartDate}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div>
                         <Label>GST Number</Label>
-                        <Input 
-                          name="gstNumber" 
-                          value={formData.gstNumber} 
+                        <Input
+                          name="gstNumber"
+                          value={formData.gstNumber}
                           onChange={handleInputChange}
                         />
                       </div>
                       <div>
                         <Label>Udyam Registration Number</Label>
-                        <Input 
-                          name="udyamNumber" 
-                          value={formData.udyamNumber} 
+                        <Input
+                          name="udyamNumber"
+                          value={formData.udyamNumber}
                           onChange={handleInputChange}
                         />
                       </div>
                       <div>
                         <Label>Trade License No.</Label>
-                        <Input 
-                          name="tradeLicenseNumber" 
-                          value={formData.tradeLicenseNumber} 
+                        <Input
+                          name="tradeLicenseNumber"
+                          value={formData.tradeLicenseNumber}
                           onChange={handleInputChange}
                         />
                       </div>
@@ -1073,59 +1071,59 @@ export default function KYCVerification() {
                     <div className="grid grid-cols-1 gap-4">
                       <div>
                         <Label>Full Address *</Label>
-                        <Textarea 
-                          name="fullAddress" 
-                          value={formData.fullAddress} 
+                        <Textarea
+                          name="fullAddress"
+                          value={formData.fullAddress}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label>Area / Locality *</Label>
-                          <Input 
-                            name="area" 
-                            value={formData.area} 
+                          <Input
+                            name="area"
+                            value={formData.area}
                             onChange={handleInputChange}
-                            required 
+                            required
                           />
                         </div>
                         <div>
                           <Label>City *</Label>
-                          <Input 
-                            name="city" 
-                            value={formData.city} 
+                          <Input
+                            name="city"
+                            value={formData.city}
                             onChange={handleInputChange}
-                            required 
+                            required
                           />
                         </div>
                         <div>
                           <Label>District *</Label>
-                          <Input 
-                            name="district" 
-                            value={formData.district} 
+                          <Input
+                            name="district"
+                            value={formData.district}
                             onChange={handleInputChange}
-                            required 
+                            required
                           />
                         </div>
                         <div>
                           <Label>State *</Label>
-                          <Input 
-                            name="state" 
-                            value={formData.state} 
+                          <Input
+                            name="state"
+                            value={formData.state}
                             onChange={handleInputChange}
-                            required 
+                            required
                           />
                         </div>
                         <div>
                           <Label>Pincode *</Label>
-                          <Input 
-                            name="pincode" 
-                            type="text" 
+                          <Input
+                            name="pincode"
+                            type="text"
                             pattern="[0-9]{6}"
-                            value={formData.pincode} 
+                            value={formData.pincode}
                             onChange={handleInputChange}
-                            required 
+                            required
                           />
                         </div>
                       </div>
@@ -1138,35 +1136,35 @@ export default function KYCVerification() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2">4. Owner Identity Documents</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <DocumentUpload 
-                        label="Aadhar Front *" 
-                        name="aadharFront" 
+                      <DocumentUpload
+                        label="Aadhar Front *"
+                        name="aadharFront"
                         file={formData.aadharFront}
                         onFileChange={handleFileChange}
                         triggerFileInput={triggerFileInput}
                         inputRef={el => fileInputRefs.current.aadharFront = el}
                         required
                       />
-                      <DocumentUpload 
-                        label="Aadhar Back *" 
-                        name="aadharBack" 
+                      <DocumentUpload
+                        label="Aadhar Back *"
+                        name="aadharBack"
                         file={formData.aadharBack}
                         onFileChange={handleFileChange}
                         triggerFileInput={triggerFileInput}
                         inputRef={el => fileInputRefs.current.aadharBack = el}
                         required
                       />
-                      <DocumentUpload 
-                        label="PAN Card" 
-                        name="panCard" 
+                      <DocumentUpload
+                        label="PAN Card"
+                        name="panCard"
                         file={formData.panCard}
                         onFileChange={handleFileChange}
                         triggerFileInput={triggerFileInput}
                         inputRef={el => fileInputRefs.current.panCard = el}
                       />
-<DocumentUpload 
-                        label="Signature Upload *" 
-                        name="signature" 
+                      <DocumentUpload
+                        label="Signature Upload *"
+                        name="signature"
                         file={formData.signature}
                         onFileChange={handleFileChange}
                         triggerFileInput={triggerFileInput}
@@ -1183,9 +1181,9 @@ export default function KYCVerification() {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2">5. Shop Proof Documents</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <DocumentUpload 
-                        label="Shop Photo (Outside View) *" 
-                        name="shopPhotoOutside" 
+                      <DocumentUpload
+                        label="Shop Photo (Outside View) *"
+                        name="shopPhotoOutside"
                         file={formData.shopPhotoOutside}
                         onFileChange={handleFileChange}
                         triggerFileInput={triggerFileInput}
@@ -1193,9 +1191,9 @@ export default function KYCVerification() {
                         accept="image/*"
                         required
                       />
-                      <DocumentUpload 
-                        label="Shop Inside Photo *" 
-                        name="shopPhotoInside" 
+                      <DocumentUpload
+                        label="Shop Inside Photo *"
+                        name="shopPhotoInside"
                         file={formData.shopPhotoInside}
                         onFileChange={handleFileChange}
                         triggerFileInput={triggerFileInput}
@@ -1203,18 +1201,18 @@ export default function KYCVerification() {
                         accept="image/*"
                         required
                       />
-                      <DocumentUpload 
-                        label="Electricity Bill / Rent Agreement *" 
-                        name="electricityBill" 
+                      <DocumentUpload
+                        label="Electricity Bill / Rent Agreement *"
+                        name="electricityBill"
                         file={formData.electricityBill}
                         onFileChange={handleFileChange}
                         triggerFileInput={triggerFileInput}
                         inputRef={el => fileInputRefs.current.electricityBill = el}
                         required
                       />
-                      <DocumentUpload 
-                        label="Trade License / GST Certificate" 
-                        name="tradeLicenseDoc" 
+                      <DocumentUpload
+                        label="Trade License / GST Certificate"
+                        name="tradeLicenseDoc"
                         file={formData.tradeLicenseDoc}
                         onFileChange={handleFileChange}
                         triggerFileInput={triggerFileInput}
@@ -1231,35 +1229,35 @@ export default function KYCVerification() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label>Bank Account Number *</Label>
-                        <Input 
-                          name="accountNumber" 
-                          value={formData.accountNumber} 
+                        <Input
+                          name="accountNumber"
+                          value={formData.accountNumber}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div>
                         <Label>IFSC Code *</Label>
-                        <Input 
-                          name="ifscCode" 
-                          value={formData.ifscCode} 
+                        <Input
+                          name="ifscCode"
+                          value={formData.ifscCode}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div>
                         <Label>Account Holder Name *</Label>
-                        <Input 
-                          name="accountHolderName" 
-                          value={formData.accountHolderName} 
+                        <Input
+                          name="accountHolderName"
+                          value={formData.accountHolderName}
                           onChange={handleInputChange}
-                          required 
+                          required
                         />
                       </div>
                       <div className="flex flex-col">
-                        <DocumentUpload 
-                          label="Passbook / Cancelled Cheque *" 
-                          name="bankDocument" 
+                        <DocumentUpload
+                          label="Passbook / Cancelled Cheque *"
+                          name="bankDocument"
                           file={formData.bankDocument}
                           onFileChange={handleFileChange}
                           triggerFileInput={triggerFileInput}
@@ -1274,20 +1272,20 @@ export default function KYCVerification() {
 
                 {/* Navigation Buttons */}
                 <div className="flex justify-between mt-8">
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     variant="outline"
                     onClick={prevSection}
                     disabled={currentSection === 1}
                   >
                     Previous
                   </Button>
-                  
+
                   {currentSection < 6 ? (
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       className="bg-[#25D366] hover:bg-[#128C7E] text-white font-medium py-2 px-6 rounded-md shadow-sm transition-colors duration-200"
-                      style={{ 
+                      style={{
                         backgroundColor: '#25D366',
                         borderColor: '#25D366',
                         minWidth: '100px',
@@ -1298,8 +1296,8 @@ export default function KYCVerification() {
                       Next
                     </Button>
                   ) : (
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="bg-[#25D366] hover:bg-[#128C7E] text-white"
                     >
                       Submit KYC
@@ -1333,11 +1331,11 @@ function DocumentUpload({ label, name, file, onFileChange, triggerFileInput, inp
   // Only use camera icon for "Live Photo" fields
   const isCameraIcon = label.toLowerCase().includes('live photo') || label.toLowerCase().includes('take photo');
   const iconSrc = isCameraIcon ? cameraIcon : fileIcon;
-  
+
   return (
     <div className="space-y-2">
       <Label>{label}{required && ' *'}</Label>
-      <div 
+      <div
         className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50"
         onClick={() => triggerFileInput(name)}
       >
@@ -1357,9 +1355,9 @@ function DocumentUpload({ label, name, file, onFileChange, triggerFileInput, inp
           </div>
         ) : (
           <div className="text-gray-500">
-            <img 
-              src={iconSrc} 
-              alt={isCameraIcon ? 'camera' : 'file'} 
+            <img
+              src={iconSrc}
+              alt={isCameraIcon ? 'camera' : 'file'}
               className="h-8 w-8 mx-auto mb-1"
             />
             <p className="text-sm">Click to upload</p>

@@ -72,8 +72,8 @@ export default function LoanTracking() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [applicationTypeFilter, setApplicationTypeFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('Pending');
-  const [shopkeeperFilter, setShopkeeperFilter] = useState('All Shopkeeper');
+  const [statusFilter, setStatusFilter] = useState('All');
+
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -87,6 +87,42 @@ export default function LoanTracking() {
 
     return () => clearInterval(interval); // Cleanup on unmount
   }, [fetchLoans]);
+
+  // Handle navigation filters from Dashboard
+  useEffect(() => {
+    if (location.state?.filter) {
+      const filterType = location.state.filter;
+
+      // Status Filters
+      if (['Pending', 'Verified', 'Active', 'Paid'].includes(filterType)) {
+        setStatusFilter(filterType);
+        // Reset others
+        setApplicationTypeFilter('All');
+      }
+      // Application Type Filters
+      else if (filterType === 'self') {
+        setApplicationTypeFilter('Self');
+        setStatusFilter('All');
+      }
+      else if (filterType === 'max_born_group') {
+        setApplicationTypeFilter('Maxborn');
+        setStatusFilter('All');
+      }
+      // Special Dashboard Filters that map to Status
+      else if (filterType === 'pending_emi') {
+        // This might require a new filter or mapping to Active/Overdue + logic
+        // For now, map to 'Active' or keep as is if we implemented 'pending_emi' logic
+        // Based on existing logic, maybe set Status to Active?
+        setStatusFilter('Active');
+      }
+      else if (filterType === 'upcoming_emi') {
+        setStatusFilter('Active');
+      }
+
+      // Clear state to prevent reapplying on refresh if needed, 
+      // but react-router state persists. 
+    }
+  }, [location.state]);
 
   // Sync with store data
   useEffect(() => {
@@ -152,14 +188,7 @@ export default function LoanTracking() {
       });
     }
 
-    // 3. Filter by Shopkeeper
-    if (shopkeeperFilter !== 'All Shopkeeper') {
-      // Implement logic if 'Individual' means something specific
-      // For now, if "Individual", maybe we don't filter anything different unless we have a user context of "My Loans" vs "All".
-      // valid assumption: this page is "My Loans", so all are "Individual".
-      // If "All Shopkeeper" implies a wider view (perhaps for admin, but this page is shopkeeper/LoanTracking),
-      // we might leave it as pass-through for now or strictly filter if shopName matches logged in user (if we had that context handy here)
-    }
+
 
     // 4. Search Bar
     if (searchTerm) {
@@ -174,7 +203,7 @@ export default function LoanTracking() {
     }
 
     setFilteredLoans(processedLoans);
-  }, [searchTerm, loans, applicationTypeFilter, statusFilter, shopkeeperFilter, startDate, endDate]);
+  }, [searchTerm, loans, applicationTypeFilter, statusFilter, startDate, endDate]);
 
   const handleDeleteLoan = async (loanId) => {
     if (window.confirm('Are you sure you want to delete this loan application?')) {
@@ -271,7 +300,7 @@ export default function LoanTracking() {
       cell: ({ row }) => {
         try {
           const date = row.original.appliedDate || row.original.createdAt || new Date().toISOString();
-          return new Date(date).toLocaleDateString();
+          return new Date(date).toLocaleDateString('en-GB');
         } catch (e) {
           return 'N/A';
         }
@@ -336,22 +365,24 @@ export default function LoanTracking() {
       id: 'actions',
       header: 'Actions',
       cell: ({ row }) => {
-        const canEdit = row.original.status === 'Verified' || row.original.status === 'Pending';
+        const canEdit = row.original.status === 'Pending';
         return (
           <div className="flex space-x-2">
             <Button size="sm" variant="outline" onClick={() => handleViewDetails(row.original)} title="View">
               <Eye className="h-4 w-4" />
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleEditLoan(row.original)}
-              title={canEdit ? "Edit" : "Cannot edit approved loans"}
-              disabled={!canEdit}
-              className={!canEdit ? 'opacity-50 cursor-not-allowed' : ''}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
+            {row.original.status !== 'Verified' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleEditLoan(row.original)}
+                title={canEdit ? "Edit" : "Cannot edit approved loans"}
+                disabled={!canEdit}
+                className={!canEdit ? 'opacity-50 cursor-not-allowed' : ''}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => handleDeleteLoan(row.original.id)} title="Delete">
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -437,34 +468,9 @@ export default function LoanTracking() {
               </select>
             </div>
 
-            {/* Shopkeeper Wise */}
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Shopkeeper wise</label>
-              <select
-                className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={shopkeeperFilter}
-                onChange={(e) => setShopkeeperFilter(e.target.value)}
-              >
-                <option value="All Shopkeeper">All Shopkeeper</option>
-                <option value="Individual">Individual</option>
-              </select>
-            </div>
 
-            {/* Search Bar */}
-            <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Search Bar</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search Loan ID, Name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                  title="Search By Loan ID, Client Name, Shopkeeper Name, Adhar Number"
-                />
-              </div>
-            </div>
+
+
 
             {/* Search Bar */}
             <div className="lg:col-span-2">
@@ -562,17 +568,19 @@ export default function LoanTracking() {
                     <Eye className="h-4 w-4 mr-2" />
                     View
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => handleEditLoan(loan)}
-                    disabled={loan.status !== 'Verified' && loan.status !== 'Pending'}
-                    title={loan.status === 'Verified' || loan.status === 'Pending' ? 'Edit Loan' : 'Cannot edit approved loans'}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
+                  {loan.status !== 'Verified' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleEditLoan(loan)}
+                      disabled={loan.status !== 'Pending'}
+                      title={loan.status === 'Pending' ? 'Edit Loan' : 'Cannot edit approved loans'}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="destructive"
@@ -650,7 +658,7 @@ export default function LoanTracking() {
                               const d = new Date(row.dueDate);
                               let dateLabel = 'N/A';
                               if (!isNaN(d.getTime())) {
-                                dateLabel = d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+                                dateLabel = d.toLocaleDateString('en-GB');
                               }
                               return (
                                 <tr key={row.emiNumber}>

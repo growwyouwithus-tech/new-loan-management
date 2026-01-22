@@ -77,7 +77,7 @@ export default function PrintAgreement({ loan, onClose }) {
             </div>
             <div>
               <p className="text-xs text-gray-600 font-semibold">Date</p>
-              <p className="text-lg font-bold text-gray-900">{new Date().toLocaleDateString('en-IN')}</p>
+              <p className="text-lg font-bold text-gray-900">{new Date().toLocaleDateString('en-GB')}</p>
             </div>
           </div>
 

@@ -41,11 +41,18 @@ export default function LoanOrigination() {
   const stats = getStatistics()
 
   // Filter loans based on selected shopkeeper
-  const filteredVerifiedLoans = selectedShopkeeper === 'all'
-    ? verifiedLoans
-    : verifiedLoans.filter(loan =>
-      (loan.shopkeeperId?._id || loan.shopkeeperId?.id || loan.shopkeeperId) === selectedShopkeeper
-    )
+  // Filter loans based on selected shopkeeper (Show All Loans)
+  const filteredVerifiedLoans = loans.filter(loan => {
+    // Shopkeeper check
+    const rawId = loan.shopkeeperId;
+    // Handle both populated object and direct ID string
+    const loanShopkeeperId = rawId?._id || rawId?.id || rawId;
+
+    const matchesShopkeeper = selectedShopkeeper === 'all' ||
+      String(loanShopkeeperId || '').trim().toLowerCase() === String(selectedShopkeeper || '').trim().toLowerCase();
+
+    return matchesShopkeeper
+  })
 
   const handleApproveLoan = (loanId) => {
     const success = approveLoan(loanId)
@@ -101,7 +108,7 @@ export default function LoanOrigination() {
           >
             <option value="all">All Shopkeepers</option>
             {shopkeepers.map(sk => (
-              <option key={sk.id || sk._id} value={sk.id || sk._id}>
+              <option key={sk._id || sk.id} value={sk._id || sk.id}>
                 {sk.shopName || sk.name} ({sk.fullName || sk.ownerName})
               </option>
             ))}

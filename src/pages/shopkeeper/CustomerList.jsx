@@ -137,7 +137,7 @@ export default function CustomerList() {
       header: 'Added On',
       cell: ({ row }) => {
         const date = new Date(row.original.createdAt)
-        return date.toLocaleDateString()
+        return date.toLocaleDateString('en-GB')
       },
     },
     {
@@ -317,7 +317,7 @@ export default function CustomerList() {
               <div>
                 <h3 className="text-xl font-bold">{selectedCustomer.fullName}</h3>
                 <p className="text-gray-500">Father: {selectedCustomer.fatherName}</p>
-                <p className="text-gray-500">Added: {new Date(selectedCustomer.createdAt).toLocaleDateString()}</p>
+                <p className="text-gray-500">Added: {new Date(selectedCustomer.createdAt).toLocaleDateString('en-GB')}</p>
               </div>
             </div>
 
@@ -356,7 +356,7 @@ export default function CustomerList() {
                     <span>Aadhar: {selectedCustomer.aadharNumber}</span>
                   </div>
                 )}
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {selectedCustomer.profilePhoto && (
                     <div>

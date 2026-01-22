@@ -1163,7 +1163,7 @@ export default function ApplyLoan() {
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('gender') ? 'text-red-600' : 'text-gray-700'}`}>Gender *</label>
                 <div className="flex flex-wrap gap-3 md:gap-6 mt-3">
-                  {['male', 'female', 'other'].map(g => <label key={g} className="inline-flex items-center cursor-pointer group"><input type="radio" value={g} {...register('gender')} className="h-4 w-4 md:h-5 md:w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2 md:ml-2.5 capitalize font-medium text-sm md:text-base text-gray-700 group-hover:text-blue-600 transition-colors">{g}</span></label>)}
+                  {['male', 'female',].map(g => <label key={g} className="inline-flex items-center cursor-pointer group"><input type="radio" value={g} {...register('gender')} className="h-4 w-4 md:h-5 md:w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2 md:ml-2.5 capitalize font-medium text-sm md:text-base text-gray-700 group-hover:text-blue-600 transition-colors">{g}</span></label>)}
                 </div>
                 {errors.gender && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.gender.message}</p>}
                 {missingFields.includes('gender') && !errors.gender && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
@@ -1234,7 +1234,7 @@ export default function ApplyLoan() {
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('relation') ? 'text-red-600' : 'text-gray-700'}`}>Relation *</label>
                 <select {...register('relation')} className={`w-full rounded-lg border-2 py-2.5 px-3 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${missingFields.includes('relation') ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-400 hover:border-gray-300'}`}>
                   <option value="">Select Relation</option>
-                  {['father', 'brother', 'sister', 'colleague', 'neighbor'].map(r => <option key={r} value={r} className="capitalize">{r.replace('_', ' ')}</option>)}
+                  {['father', 'son', 'brother', 'sister', 'colleague', 'neighbor'].map(r => <option key={r} value={r} className="capitalize">{r.replace('_', ' ')}</option>)}
                 </select>
                 {errors.relation && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.relation.message}</p>}
                 {missingFields.includes('relation') && !errors.relation && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
@@ -1244,7 +1244,7 @@ export default function ApplyLoan() {
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('guarantorGender') ? 'text-red-600' : 'text-gray-700'}`}>Gender *</label>
                 <div className="flex space-x-6 mt-3">
-                  {['male', 'female', 'other'].map(g => <label key={g} className="inline-flex items-center cursor-pointer group"><input type="radio" value={g} {...register('guarantorGender')} className="h-5 w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2.5 capitalize font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{g}</span></label>)}
+                  {['male', 'female',].map(g => <label key={g} className="inline-flex items-center cursor-pointer group"><input type="radio" value={g} {...register('guarantorGender')} className="h-5 w-5 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer" /><span className="ml-2.5 capitalize font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{g}</span></label>)}
                 </div>
                 {errors.guarantorGender && <p className="mt-1.5 text-sm text-red-600 font-medium">{errors.guarantorGender.message}</p>}
                 {missingFields.includes('guarantorGender') && !errors.guarantorGender && <p className="mt-1.5 text-sm text-red-600 font-medium">This field is required</p>}
@@ -1281,7 +1281,7 @@ export default function ApplyLoan() {
               <FormInput name="productName" label="Product Name *" register={register} errors={errors} icon={Briefcase} isMissing={missingFields.includes('productName')} />
               <FormInput name="price" label="Price (Max ₹20,000) *" type="number" register={register} errors={errors} icon={Banknote} min={1} max={20000} isMissing={missingFields.includes('price')} />
               <FormInput name="serialNumber" label="Serial Number *" register={register} errors={errors} icon={Hash} isMissing={missingFields.includes('serialNumber')} />
-              <FormInput name="securityKey" label="Security Key" register={register} errors={errors} icon={Hash} placeholder="Enter security key" isMissing={missingFields.includes('securityKey')} />
+              <FormInput name="securityKey" label="Serial No. 2" register={register} errors={errors} icon={Hash} placeholder="Enter Serial No. 2" isMissing={missingFields.includes('securityKey')} />
               <div>
                 <label className={`block text-sm font-semibold mb-2 ${missingFields.includes('tenure') ? 'text-red-600' : 'text-gray-700'}`}>Tenure *</label>
                 <select
@@ -1289,8 +1289,7 @@ export default function ApplyLoan() {
                   className={`w-full rounded-lg border-2 py-2.5 px-3 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${missingFields.includes('tenure') ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-400 hover:border-gray-300'}`}
                 >
                   <option value="">Select Tenure</option>
-                  <option value="3">3 months</option>
-                  <option value="4">4 months</option>
+
                   <option value="5">5 months</option>
                   <option value="6">6 months</option>
                   <option value="7">7 months</option>
@@ -1361,7 +1360,7 @@ export default function ApplyLoan() {
                   <p className="text-gray-700">Company: <span className="font-medium">{formatSummaryValue(summaryData.productCompany)}</span></p>
                   <p className="text-gray-700">Price: <span className="font-medium">{formatSummaryValue(summaryData.price)}</span></p>
                   <p className="text-gray-700">Serial Number: <span className="font-medium">{formatSummaryValue(summaryData.serialNumber)}</span></p>
-                  <p className="text-gray-700">Security Key: <span className="font-medium">{formatSummaryValue(summaryData.securityKey)}</span></p>
+                  <p className="text-gray-700">Serial No. 2: <span className="font-medium">{formatSummaryValue(summaryData.securityKey)}</span></p>
                   <p className="text-gray-700">Tenure (months): <span className="font-medium">{formatSummaryValue(summaryData.tenure)}</span></p>
                   <p className="text-gray-700">EMI Start Date: <span className="font-medium">{formatSummaryValue(summaryData.emiStartDate)}</span></p>
                 </div>
@@ -1507,7 +1506,7 @@ export default function ApplyLoan() {
                     <p className="text-base font-medium text-gray-900 mt-1">{formatSummaryValue(previewData.serialNumber)}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Security Key</p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Serial No. 2</p>
                     <p className="text-base font-medium text-gray-900 mt-1">{formatSummaryValue(previewData.securityKey)}</p>
                   </div>
                   <div>

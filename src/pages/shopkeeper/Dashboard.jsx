@@ -73,29 +73,64 @@ export default function ShopkeeperDashboard() {
   const selfLoansCount = filteredLoans.filter(l => l.applicationMode === 'self').length
   const maxbornLoansCount = filteredLoans.filter(l => l.applicationMode === 'max_born_group').length
 
-  // EMI Stats Logic
-  // Collected EMI: Sum of emisPaid
-  const totalEmisCollected = filteredLoans.reduce((sum, loan) => sum + (loan.emisPaid || 0), 0)
+  // EMI Stats Logic - Robust calculation to match EMIList page
+  const calculateEMIDueDateLocal = (baseDateStr, emiNumber) => {
+    const baseDate = new Date(baseDateStr)
+    const baseDateDay = baseDate.getDate()
+    let firstEMIDueDate = new Date(baseDate)
 
-  // Remaining EMI: Sum of emisRemaining
-  const totalEmisRemaining = filteredLoans.reduce((sum, loan) => sum + (loan.emisRemaining || 0), 0)
+    if (baseDateDay >= 1 && baseDateDay <= 18) {
+      firstEMIDueDate.setMonth(firstEMIDueDate.getMonth() + 1)
+      firstEMIDueDate.setDate(2)
+    } else {
+      firstEMIDueDate.setMonth(firstEMIDueDate.getMonth() + 2)
+      firstEMIDueDate.setDate(2)
+    }
 
-  // Pending EMI: Count of active/overdue loans that have overdue payment (nextDueDate < today)
-  // Or simply using 'Overdue' status as a proxy for Pending EMI issues
-  const pendingEmiCount = filteredLoans.filter(l => {
-    if (l.status !== 'Active' && l.status !== 'Overdue') return false;
-    const dueDate = l.nextDueDate ? new Date(l.nextDueDate) : null;
-    const today = new Date();
-    return dueDate && dueDate < today;
-  }).length;
+    const dueDate = new Date(firstEMIDueDate)
+    dueDate.setMonth(dueDate.getMonth() + (emiNumber - 1))
+    return dueDate
+  }
 
-  // Upcoming EMI: Active loans where nextDueDate is in future
-  const upcomingEmiCount = filteredLoans.filter(l => {
-    if (l.status !== 'Active') return false;
-    const dueDate = l.nextDueDate ? new Date(l.nextDueDate) : null;
-    const today = new Date();
-    return dueDate && dueDate >= today;
-  }).length;
+  let totalEmisCollected = 0
+  let totalEmisRemaining = 0
+  let pendingEmiCount = 0
+  let upcomingEmiCount = 0
+
+  filteredLoans.forEach(loan => {
+    // Exclude rejected/void loans
+    const status = (loan.status || '').toLowerCase()
+    if (status === 'rejected' || status === 'void') return
+
+    const payments = loan.payments || []
+    const paymentsCount = payments.length
+    const tenure = loan.tenure || (loan.emisPaid || 0) + (loan.emisRemaining || 0) || 12
+    const baseDateStr = loan.emiStartDate || loan.appliedDate || loan.approvedDate || loan.createdAt
+
+    // Stats for this loan
+    totalEmisCollected += paymentsCount
+
+    // Calculate remaining
+    const remaining = Math.max(tenure - paymentsCount, 0)
+    totalEmisRemaining += remaining
+
+    // Calculate specific Pending/Upcoming counts based on dates
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    for (let i = 1; i <= tenure; i++) {
+      if (i <= paymentsCount) continue; // Already paid
+
+      const dueDate = calculateEMIDueDateLocal(baseDateStr, i)
+      dueDate.setHours(0, 0, 0, 0)
+
+      if (dueDate < today) {
+        pendingEmiCount++
+      } else {
+        upcomingEmiCount++
+      }
+    }
+  })
 
   const totalCustomers = new Set(filteredLoans.map(l => l.clientAadharNumber)).size
 
@@ -250,11 +285,11 @@ export default function ShopkeeperDashboard() {
         <IconCard icon={DollarSign} label="Completed Loans" value={completedLoans} color="cyan" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'Paid' } })} />
 
         {/* Row 3 */}
-        <IconCard icon={Clock3} label="Pending EMI" value={pendingEmiCount} color="orange" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'pending_emi' } })} />
-        <IconCard icon={CalendarCheck} label="Collected EMI" value={totalEmisCollected} color="blue" onClick={() => navigate('/shopkeeper/collect-payment')} />
+        <IconCard icon={Clock3} label="Pending EMI" value={pendingEmiCount} color="orange" onClick={() => navigate('/shopkeeper/emis', { state: { filter: 'pending_emi' } })} />
+        <IconCard icon={CalendarCheck} label="Collected EMI" value={totalEmisCollected} color="blue" onClick={() => navigate('/shopkeeper/emis', { state: { filter: 'collected_emi' } })} />
 
-        <IconCard icon={CalendarCheck} label="Upcoming EMI" value={upcomingEmiCount} color="green" onClick={() => navigate('/shopkeeper/loans', { state: { filter: 'upcoming_emi' } })} />
-        <IconCard icon={Clock3} label="Remaining EMI" value={totalEmisRemaining} color="red" onClick={() => navigate('/shopkeeper/loans')} />
+        <IconCard icon={CalendarCheck} label="Upcoming EMI" value={upcomingEmiCount} color="green" onClick={() => navigate('/shopkeeper/emis', { state: { filter: 'upcoming_emi' } })} />
+        <IconCard icon={Clock3} label="Remaining EMI" value={totalEmisRemaining} color="red" onClick={() => navigate('/shopkeeper/emis', { state: { filter: 'remaining_emi' } })} />
 
         {/* Row 4 */}
         {/* <IconCard icon={DollarSign} label="Today's Collections" value={`₹${todayCollections.toLocaleString()}`} color="green" onClick={() => navigate('/shopkeeper/collect-payment')} /> */}

@@ -36,6 +36,7 @@ import CustomerList from './pages/shopkeeper/CustomerList'
 import ShopkeeperNotifications from './pages/shopkeeper/Notifications'
 
 import PaymentRecords from './pages/shopkeeper/PaymentRecords'
+import EMIList from './pages/shopkeeper/EMIList'
 import Profile from './pages/shopkeeper/Profile'
 
 // Collections Pages
@@ -106,6 +107,7 @@ function App() {
           <Route path="my-loans" element={<LoanTracking />} />
           <Route path="collect-payment" element={<CollectPayment />} />
           <Route path="customers" element={<CustomerList />} />
+          <Route path="emis" element={<EMIList />} />
           <Route path="notifications" element={<ShopkeeperNotifications />} />
 
           <Route path="payment-records" element={<PaymentRecords />} />

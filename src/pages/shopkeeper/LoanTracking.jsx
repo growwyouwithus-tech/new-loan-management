@@ -110,10 +110,8 @@ export default function LoanTracking() {
       }
       // Special Dashboard Filters that map to Status
       else if (filterType === 'pending_emi') {
-        // This might require a new filter or mapping to Active/Overdue + logic
-        // For now, map to 'Active' or keep as is if we implemented 'pending_emi' logic
-        // Based on existing logic, maybe set Status to Active?
-        setStatusFilter('Active');
+        // Show all loans so user can see Pending applications that might have EMIs
+        setStatusFilter('All');
       }
       else if (filterType === 'upcoming_emi') {
         setStatusFilter('Active');

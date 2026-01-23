@@ -7,14 +7,54 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Select from '../../components/ui/Select'
-import { DollarSign, CreditCard, Smartphone, Wallet } from 'lucide-react'
+import { DollarSign, CreditCard, Smartphone, Wallet, Calendar, AlertTriangle } from 'lucide-react'
 import { db } from '../../lib/db'
 import loanStore from '../../store/loanStore'
+
+// Helper: Calculate EMI due date
+const calculateEMIDueDate = (baseDateStr, emiNumber) => {
+  const baseDate = new Date(baseDateStr)
+  const baseDateDay = baseDate.getDate()
+
+  let firstEMIDueDate = new Date(baseDate)
+
+  if (baseDateDay >= 1 && baseDateDay <= 18) {
+    firstEMIDueDate.setMonth(firstEMIDueDate.getMonth() + 1)
+    firstEMIDueDate.setDate(2)
+  } else {
+    firstEMIDueDate.setMonth(firstEMIDueDate.getMonth() + 2)
+    firstEMIDueDate.setDate(2)
+  }
+
+  const dueDate = new Date(firstEMIDueDate)
+  dueDate.setMonth(dueDate.getMonth() + (emiNumber - 1))
+
+  return dueDate.toISOString().split('T')[0]
+}
+
+// Helper: Calculate penalty for overdue EMI (₹20 per day)
+const calculatePenalty = (dueDateStr) => {
+  const dueDate = new Date(dueDateStr)
+  const today = new Date()
+  dueDate.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+
+  if (today <= dueDate) return { amount: 0, days: 0 }
+
+  const diffTime = today - dueDate
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const penaltyPerDay = 20
+  const penaltyAmount = diffDays * penaltyPerDay
+
+  return { amount: penaltyAmount, days: diffDays }
+}
 
 export default function CollectPayment() {
   const [selectedLoan, setSelectedLoan] = useState(null)
   const [searchName, setSearchName] = useState('')
   const [searchAadhar, setSearchAadhar] = useState('')
+  const [emiDueDate, setEmiDueDate] = useState(null)
+  const [penaltyInfo, setPenaltyInfo] = useState({ amount: 0, days: 0 })
   const location = useLocation()
   const preselectedLoanId = location.state?.loanId
   const { register, handleSubmit, reset, setValue, control } = useForm({
@@ -74,6 +114,18 @@ export default function CollectPayment() {
     if (loan) {
       setValue('loanId', String(loan.id))
       setSelectedLoan(loan)
+
+      // Calculate EMI due date and penalty
+      const existingPayments = loan.payments || []
+      const nextEmiNumber = existingPayments.length + 1
+      const baseDateStr = loan.emiStartDate || loan.appliedDate || loan.approvedDate || loan.createdAt
+      const dueDate = calculateEMIDueDate(baseDateStr, nextEmiNumber)
+      setEmiDueDate(dueDate)
+      const penalty = calculatePenalty(dueDate)
+      setPenaltyInfo(penalty)
+      const emiAmount = loan.emiAmount || loan.loanAmount || 0
+      const totalAmount = emiAmount + penalty.amount
+      setValue('amount', totalAmount)
     }
   }, [preselectedLoanId, loans, setValue])
 
@@ -94,6 +146,20 @@ export default function CollectPayment() {
         return
       }
 
+      // Calculate total amount due (EMI + penalty)
+      const emiAmount = selectedLoan.emiAmount || selectedLoan.loanAmount || 0
+      const totalAmountDue = emiAmount + penaltyInfo.amount
+      const paymentAmount = parseFloat(data.amount)
+
+      // Validate payment amount
+      if (paymentAmount < totalAmountDue) {
+        toast.error(
+          `Payment amount (₹${paymentAmount.toLocaleString()}) is less than total amount due (₹${totalAmountDue.toLocaleString()}). Please pay the full amount including penalty.`,
+          { autoClose: 5000 }
+        )
+        return
+      }
+
       // Calculate EMI number based on existing payments
       const existingPayments = selectedLoan.payments || []
       const emiNumber = existingPayments.length + 1
@@ -101,7 +167,7 @@ export default function CollectPayment() {
       // Use _id for MongoDB loans
       const backendLoanId = selectedLoan._id || selectedLoan.id;
 
-      // Create payment record for EMI Management
+      // Create payment record for EMI Management (include penalty)
       const paymentRecord = {
         id: `PAY${Date.now()}`,
         loanId: backendLoanId,
@@ -113,6 +179,7 @@ export default function CollectPayment() {
         status: 'completed',
         collectedBy: 'shopkeeper',
         emiNumber: emiNumber,
+        penalty: penaltyInfo.amount, // Include penalty amount
         synced: false
       }
 
@@ -127,7 +194,8 @@ export default function CollectPayment() {
         paymentDate: data.date || paymentRecord.date,
         collectedBy: 'shopkeeper',
         transactionId: data.transactionId || '',
-        emiNumber: emiNumber
+        emiNumber: emiNumber,
+        penalty: penaltyInfo.amount // Include penalty in backend call
       })
 
       if (!result) {
@@ -200,9 +268,21 @@ export default function CollectPayment() {
                             setSearchAadhar(aadhar)
 
                             // Auto-select the loan
-                            setSelectedLoan(matchingLoans[0])
-                            setValue('loanId', matchingLoans[0]._id || matchingLoans[0].id)
-                            setValue('amount', matchingLoans[0].emiAmount || matchingLoans[0].loanAmount || 0)
+                            const loan = matchingLoans[0]
+                            setSelectedLoan(loan)
+                            setValue('loanId', loan._id || loan.id)
+
+                            // Calculate EMI due date and penalty
+                            const existingPayments = loan.payments || []
+                            const nextEmiNumber = existingPayments.length + 1
+                            const baseDateStr = loan.emiStartDate || loan.appliedDate || loan.approvedDate || loan.createdAt
+                            const dueDate = calculateEMIDueDate(baseDateStr, nextEmiNumber)
+                            setEmiDueDate(dueDate)
+                            const penalty = calculatePenalty(dueDate)
+                            setPenaltyInfo(penalty)
+                            const emiAmount = loan.emiAmount || loan.loanAmount || 0
+                            const totalAmount = emiAmount + penalty.amount
+                            setValue('amount', totalAmount)
                           }
                         }
                       }}
@@ -232,9 +312,21 @@ export default function CollectPayment() {
                             setSearchName(name)
 
                             // Auto-select the loan
-                            setSelectedLoan(matchingLoans[0])
-                            setValue('loanId', matchingLoans[0]._id || matchingLoans[0].id)
-                            setValue('amount', matchingLoans[0].emiAmount || matchingLoans[0].loanAmount || 0)
+                            const loan = matchingLoans[0]
+                            setSelectedLoan(loan)
+                            setValue('loanId', loan._id || loan.id)
+
+                            // Calculate EMI due date and penalty
+                            const existingPayments = loan.payments || []
+                            const nextEmiNumber = existingPayments.length + 1
+                            const baseDateStr = loan.emiStartDate || loan.appliedDate || loan.approvedDate || loan.createdAt
+                            const dueDate = calculateEMIDueDate(baseDateStr, nextEmiNumber)
+                            setEmiDueDate(dueDate)
+                            const penalty = calculatePenalty(dueDate)
+                            setPenaltyInfo(penalty)
+                            const emiAmount = loan.emiAmount || loan.loanAmount || 0
+                            const totalAmount = emiAmount + penalty.amount
+                            setValue('amount', totalAmount)
                           }
                         }
                       }}
@@ -275,9 +367,27 @@ export default function CollectPayment() {
 
                       // Auto-fill form fields when loan is selected
                       if (loan) {
+                        // Calculate next EMI number
+                        const existingPayments = loan.payments || []
+                        const nextEmiNumber = existingPayments.length + 1
+
+                        // Calculate EMI due date
+                        const baseDateStr = loan.emiStartDate || loan.appliedDate || loan.approvedDate || loan.createdAt
+                        const dueDate = calculateEMIDueDate(baseDateStr, nextEmiNumber)
+                        setEmiDueDate(dueDate)
+
+                        // Calculate penalty if overdue
+                        const penalty = calculatePenalty(dueDate)
+                        setPenaltyInfo(penalty)
+
+                        // Set amount with penalty if applicable
                         const emiAmount = loan.emiAmount || loan.loanAmount || 0
-                        setValue('amount', emiAmount)
-                        console.log('Set EMI amount:', emiAmount)
+                        const totalAmount = emiAmount + penalty.amount
+                        setValue('amount', totalAmount)
+                        console.log('Set EMI amount:', emiAmount, 'Penalty:', penalty.amount, 'Total:', totalAmount)
+                      } else {
+                        setEmiDueDate(null)
+                        setPenaltyInfo({ amount: 0, days: 0 })
                       }
                     }}
                   >
@@ -327,13 +437,57 @@ export default function CollectPayment() {
                           <p className="text-xs text-blue-600 font-semibold">EMIs Remaining</p>
                           <p className="text-sm md:text-base font-bold text-orange-600 mt-1">{selectedLoan.emisRemaining || 0}</p>
                         </div>
+
+                        {/* EMI Due Date */}
+                        {emiDueDate && (
+                          <div className="col-span-2 pt-2 border-t border-blue-200">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-blue-600" />
+                              <p className="text-xs text-blue-600 font-semibold">Next EMI Due Date</p>
+                            </div>
+                            <p className="text-sm md:text-base font-bold text-gray-900 mt-1">
+                              {new Date(emiDueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
+                    {/* Penalty Warning Card - Only show if overdue */}
+                    {penaltyInfo.amount > 0 && (
+                      <div className="p-4 md:p-5 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border-2 border-red-300 shadow-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertTriangle className="h-5 w-5 text-red-600" />
+                          <p className="text-sm md:text-base font-bold text-red-900">EMI Overdue - Penalty Applied</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 mt-3">
+                          <div>
+                            <p className="text-xs text-red-600 font-semibold">Days Overdue</p>
+                            <p className="text-lg md:text-xl font-bold text-red-900 mt-1">{penaltyInfo.days} days</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-red-600 font-semibold">Penalty Amount</p>
+                            <p className="text-lg md:text-xl font-bold text-red-900 mt-1">₹{penaltyInfo.amount.toLocaleString()}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-red-700 mt-3 bg-red-200/50 p-2 rounded">
+                          Penalty: ₹20 per day × {penaltyInfo.days} days = ₹{penaltyInfo.amount.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Due Amount Card */}
                     <div className="p-4 md:p-5 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl shadow-lg">
-                      <p className="text-xs md:text-sm text-white/90 font-medium">Due Amount (This EMI)</p>
-                      <p className="text-3xl md:text-4xl font-bold text-white mt-1">₹{(selectedLoan.emiAmount || selectedLoan.loanAmount || 0).toLocaleString()}</p>
+                      <p className="text-xs md:text-sm text-white/90 font-medium">Total Amount Due (This EMI)</p>
+                      <p className="text-3xl md:text-4xl font-bold text-white mt-1">
+                        ₹{((selectedLoan.emiAmount || selectedLoan.loanAmount || 0) + penaltyInfo.amount).toLocaleString()}
+                      </p>
+                      {penaltyInfo.amount > 0 && (
+                        <div className="mt-3 pt-3 border-t border-white/30">
+                          <p className="text-xs text-white/80">EMI Amount: ₹{(selectedLoan.emiAmount || 0).toLocaleString()}</p>
+                          <p className="text-xs text-white/80">+ Penalty: ₹{penaltyInfo.amount.toLocaleString()}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

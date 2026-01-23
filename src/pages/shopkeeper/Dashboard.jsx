@@ -289,7 +289,6 @@ export default function ShopkeeperDashboard() {
         <IconCard icon={CalendarCheck} label="Collected EMI" value={totalEmisCollected} color="blue" onClick={() => navigate('/shopkeeper/emis', { state: { filter: 'collected_emi' } })} />
 
         <IconCard icon={CalendarCheck} label="Upcoming EMI" value={upcomingEmiCount} color="green" onClick={() => navigate('/shopkeeper/emis', { state: { filter: 'upcoming_emi' } })} />
-        <IconCard icon={Clock3} label="Remaining EMI" value={totalEmisRemaining} color="red" onClick={() => navigate('/shopkeeper/emis', { state: { filter: 'remaining_emi' } })} />
 
         {/* Row 4 */}
         {/* <IconCard icon={DollarSign} label="Today's Collections" value={`₹${todayCollections.toLocaleString()}`} color="green" onClick={() => navigate('/shopkeeper/collect-payment')} /> */}

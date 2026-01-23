@@ -78,10 +78,38 @@ export default function EMIList() {
                 dueDate.setHours(0, 0, 0, 0)
 
                 let status = 'Upcoming'
+                let collectedDate = null
+                let penalty = 0
+
+                // Check if this EMI was paid
                 if (i <= paymentsCount) {
                     status = 'Paid'
+                    // Get the payment record for this EMI
+                    const payment = payments[i - 1]
+                    if (payment) {
+                        collectedDate = payment.paymentDate || payment.date
+
+                        // Check if penalty was stored in payment record
+                        if (payment.penalty && payment.penalty > 0) {
+                            penalty = payment.penalty
+                        } else {
+                            // Calculate penalty retroactively if paid late
+                            const collectionDate = new Date(collectedDate)
+                            collectionDate.setHours(0, 0, 0, 0)
+
+                            if (collectionDate > dueDate) {
+                                const diffTime = collectionDate - dueDate
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                                penalty = diffDays * 20
+                            }
+                        }
+                    }
                 } else if (dueDate < today) {
                     status = 'Pending' // Overdue technically
+                    // Calculate penalty for overdue EMI (₹20 per day)
+                    const diffTime = today - dueDate
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                    penalty = diffDays * 20
                 } else if (dueDate.getTime() === today.getTime()) {
                     status = 'Today'
                 }
@@ -95,6 +123,8 @@ export default function EMIList() {
                     emiNumber: i,
                     amount: emiAmountBase,
                     dueDate: dueDateStr,
+                    collectedDate: collectedDate,
+                    penalty: penalty,
                     status: status,
                     originalLoan: loan
                 })
@@ -175,9 +205,38 @@ export default function EMIList() {
             }
         },
         {
+            accessorKey: 'collectedDate',
+            header: 'Collected Date',
+            cell: ({ row }) => {
+                const collectedDate = row.original.collectedDate
+                if (!collectedDate) return <span className="text-muted-foreground text-sm">-</span>
+                const date = new Date(collectedDate)
+                return (
+                    <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                        <span className="text-green-700 font-medium">{date.toLocaleDateString('en-GB')}</span>
+                    </div>
+                )
+            }
+        },
+        {
             accessorKey: 'amount',
             header: 'Amount',
             cell: ({ row }) => <span className="font-bold">₹{row.original.amount.toLocaleString()}</span>
+        },
+        {
+            accessorKey: 'penalty',
+            header: 'Penalty',
+            cell: ({ row }) => {
+                const penalty = row.original.penalty || 0
+                if (penalty === 0) return <span className="text-muted-foreground text-sm">-</span>
+                const isPending = row.original.status === 'Pending' || row.original.status === 'Today'
+                return (
+                    <span className={`font-bold ${isPending ? 'text-red-600' : 'text-orange-600'}`}>
+                        ₹{penalty.toLocaleString()}
+                    </span>
+                )
+            }
         },
         {
             accessorKey: 'status',

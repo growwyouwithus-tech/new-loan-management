@@ -32,7 +32,7 @@ const calculateEMIDueDate = (baseDateStr, emiNumber) => {
   return dueDate.toISOString().split('T')[0]
 }
 
-// Helper: Calculate penalty for overdue EMI (₹20 per day)
+// Helper: Calculate penalty for overdue EMI (₹20 per day + ₹199 fixed)
 const calculatePenalty = (dueDateStr) => {
   const dueDate = new Date(dueDateStr)
   const today = new Date()
@@ -44,7 +44,8 @@ const calculatePenalty = (dueDateStr) => {
   const diffTime = today - dueDate
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   const penaltyPerDay = 20
-  const penaltyAmount = diffDays * penaltyPerDay
+  const fixedPenalty = 199
+  const penaltyAmount = (diffDays * penaltyPerDay) + fixedPenalty
 
   return { amount: penaltyAmount, days: diffDays }
 }
@@ -471,7 +472,7 @@ export default function CollectPayment() {
                           </div>
                         </div>
                         <p className="text-xs text-red-700 mt-3 bg-red-200/50 p-2 rounded">
-                          Penalty: ₹20 per day × {penaltyInfo.days} days = ₹{penaltyInfo.amount.toLocaleString()}
+                          Penalty: (₹20 × {penaltyInfo.days} days) + ₹199 fixed = ₹{penaltyInfo.amount.toLocaleString()}
                         </p>
                       </div>
                     )}

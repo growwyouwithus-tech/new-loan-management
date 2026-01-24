@@ -100,7 +100,7 @@ export default function EMIList() {
                             if (collectionDate > dueDate) {
                                 const diffTime = collectionDate - dueDate
                                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                                penalty = diffDays * 20
+                                penalty = (diffDays * 20) + 199
                             }
                         }
                     }
@@ -109,7 +109,7 @@ export default function EMIList() {
                     // Calculate penalty for overdue EMI (₹20 per day)
                     const diffTime = today - dueDate
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                    penalty = diffDays * 20
+                    penalty = (diffDays * 20) + 199
                 } else if (dueDate.getTime() === today.getTime()) {
                     status = 'Today'
                 }

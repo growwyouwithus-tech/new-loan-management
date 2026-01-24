@@ -1,10 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { toast } from 'react-toastify';
 import { getImageUrl } from '../../utils/imageHelper';
-import { Search, RotateCcw, Check, X, Clock, UserCheck, Eye, Play, Pause, ThumbsDown } from 'lucide-react';
+import { Check, X, Clock, UserCheck, Eye, Play, Pause, ThumbsDown, Filter, Calendar, FileText, User } from 'lucide-react';
 import loanStore from '../../store/loanStore';
 
 // Using real API data from loanStore - no mock data
@@ -17,23 +14,10 @@ const statusColors = {
   Waiting: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
 };
 
-const months = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
-
-const schema = z.object({
-  month: z.string().optional(),
-  fromDate: z.string().optional(),
-  toDate: z.string().optional(),
-  status: z.string().optional(),
-});
-
 export default function VerifiedLoans() {
   // Get verified loans from store
   const { verifiedLoans, approveLoan, rejectLoan, initializeActiveLoans, deleteLoan: deleteLoanFromStore } = loanStore();
   const [loans, setLoans] = useState(verifiedLoans);
-  const [filteredLoans, setFilteredLoans] = useState(verifiedLoans);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -42,51 +26,45 @@ export default function VerifiedLoans() {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
 
+  // New filter state
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    applicationType: 'all',
+    verifierRole: 'all'
+  });
+
   // Sync with store data
   useEffect(() => {
     setLoans(verifiedLoans);
-    setFilteredLoans(verifiedLoans);
   }, [verifiedLoans]);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    resolver: zodResolver(schema),
+  // Filter loans based on all criteria
+  const filteredLoans = loans.filter(loan => {
+    // Verifier Role Check - directly compare with the role stored in loan
+    const matchesVerifier = filters.verifierRole === 'all' ||
+      (loan.kycVerifiedBy || loan.updatedBy || '').toLowerCase() === filters.verifierRole.toLowerCase();
+
+    // Date Range Check (Applied Date)
+    let matchesDate = true;
+    if (filters.startDate || filters.endDate) {
+      const loanDate = new Date(loan.appliedDate);
+      if (filters.startDate) {
+        matchesDate = matchesDate && loanDate >= new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        matchesDate = matchesDate && loanDate <= end;
+      }
+    }
+
+    // Application Type Check
+    const matchesAppType = filters.applicationType === 'all' ||
+      (loan.applicationMode || '').toLowerCase() === filters.applicationType.toLowerCase();
+
+    return matchesVerifier && matchesDate && matchesAppType;
   });
-
-  const onSubmit = (data) => {
-    setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      let result = [...loans];
-
-      if (data.month) {
-        result = result.filter(loan => loan.month === data.month);
-      }
-
-      if (data.fromDate && data.toDate) {
-        result = result.filter(loan => {
-          const loanDate = new Date(loan.verifiedDate);
-          const fromDate = new Date(data.fromDate);
-          const toDate = new Date(data.toDate);
-          return loanDate >= fromDate && loanDate <= toDate;
-        });
-      }
-
-      if (data.status && data.status !== 'All') {
-        result = result.filter(loan => loan.status === data.status);
-      }
-
-      setFilteredLoans(result);
-      setIsLoading(false);
-      toast.success(`Found ${result.length} loans matching your criteria`);
-    }, 500);
-  };
-
-  const handleReset = () => {
-    reset();
-    setFilteredLoans(loans);
-    toast.info('Filters have been reset');
-  };
 
   const updateLoanStatus = async (id, newStatus) => {
     try {
@@ -638,84 +616,83 @@ export default function VerifiedLoans() {
       )}
       <h1 className="text-2xl font-bold mb-6">Verified Loans Management</h1>
 
-      {/* Filters Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Filter Loans</h2>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Month
-              </label>
+      {/* Advanced Filter Section */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-5 h-5 text-gray-500" />
+          <h2 className="text-lg font-semibold text-gray-800">Filters</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Date Range */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> Start Date
+            </label>
+            <input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              className="w-full text-sm bg-gray-50 border-gray-200 rounded-lg p-2.5 focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> End Date
+            </label>
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              className="w-full text-sm bg-gray-50 border-gray-200 rounded-lg p-2.5 focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white"
+            />
+          </div>
+
+          {/* Application Type */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <FileText className="w-3 h-3" /> App. Type
+            </label>
+            <div className="relative">
               <select
-                {...register('month')}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white p-2"
+                value={filters.applicationType}
+                onChange={(e) => setFilters({ ...filters, applicationType: e.target.value })}
+                className="w-full text-sm bg-gray-50 border-gray-200 rounded-lg p-2.5 appearance-none focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white cursor-pointer"
               >
-                <option value="">Select Month</option>
-                {months.map(month => (
-                  <option key={month} value={month}>{month}</option>
-                ))}
+                <option value="all">All Types</option>
+                <option value="self">Self</option>
+                <option value="max_born_group">Max Born Group</option>
               </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                From Date
-              </label>
-              <input
-                type="date"
-                {...register('fromDate')}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white p-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                To Date
-              </label>
-              <input
-                type="date"
-                {...register('toDate')}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white p-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Status
-              </label>
-              <select
-                {...register('status')}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white p-2"
-              >
-                <option value="All">All Status</option>
-                <option value="Waiting">Waiting</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+              </div>
             </div>
           </div>
 
-          <div className="flex space-x-4 pt-2">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white !bg-green-500 !hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-            >
-              <Search className="h-4 w-4 mr-2" />
-              {isLoading ? 'Filtering...' : 'Filter Loans'}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
-            </button>
+          {/* Verifier Filter */}
+          <div className="md:col-span-2 lg:col-span-3 pt-4 border-t border-gray-100">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 block flex items-center gap-1">
+              <User className="w-3 h-3" /> Filter by Verifier Role
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+              </div>
+              <select
+                value={filters.verifierRole}
+                onChange={(e) => setFilters({ ...filters, verifierRole: e.target.value })}
+                className="w-full pl-10 text-sm bg-gray-50 border-gray-200 rounded-lg p-3 appearance-none focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white cursor-pointer"
+              >
+                <option value="all">All Verifiers</option>
+                <option value="admin">Admin</option>
+                <option value="verifier">Verifier</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+              </div>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
 
       {/* Loans Table */}
@@ -724,11 +701,15 @@ export default function VerifiedLoans() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Client Info</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Product Info</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Loan ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Verifier Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">App. Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Product</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">App. Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Loan Details</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bank Info</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Comment/Reason</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -736,31 +717,35 @@ export default function VerifiedLoans() {
               {filteredLoans.length > 0 ? (
                 filteredLoans.map((loan) => (
                   <tr key={loan.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {loan.clientName}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {loan.clientAadharNumber || loan.aadharNumber}
-                          </div>
-                          <button
-                            onClick={() => handleViewDetails(loan)}
-                            className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center"
-                          >
-                            <Eye className="h-3 w-3 mr-1" /> View Details
-                          </button>
-                        </div>
-                      </div>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {loan.loanId}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {loan.kycVerifiedBy || loan.updatedBy || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{loan.productName}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Price: ₹{loan.price?.toLocaleString()}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Tenure: {loan.tenure} months</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        EMI: ₹{(loan.emiAmount || loan.emi)?.toLocaleString() || 'N/A'}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{loan.clientName}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{loan.clientMobile || loan.clientPhone}</div>
+                      <button
+                        onClick={() => handleViewDetails(loan)}
+                        className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center"
+                      >
+                        <Eye className="h-3 w-3 mr-1" /> View Details
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {loan.applicationMode || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {loan.productName}
+                      <div className="text-xs text-gray-400">₹{loan.price?.toLocaleString()}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(loan.appliedDate).toLocaleDateString('en-GB')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <div>₹{loan.loanAmount?.toLocaleString()}</div>
+                      <div className="text-xs text-gray-400">{loan.tenure} months @ 3.5%</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">{loan.bankName}</div>
@@ -770,20 +755,6 @@ export default function VerifiedLoans() {
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[loan.status] || 'bg-gray-100 text-gray-800'}`}>
                         {loan.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {loan.statusComment ? (
-                        <div className="max-w-xs">
-                          <p className="text-sm text-gray-900 dark:text-white break-words">{loan.statusComment}</p>
-                          {loan.commentDate && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {new Date(loan.commentDate).toLocaleDateString('en-GB')}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-400 dark:text-gray-500 italic">No comment</span>
-                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex space-x-2 items-center">

@@ -137,57 +137,130 @@ export default function LoanOrigination() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Loan Origination</h1>
-          <p className="text-gray-600">Manage verified loan applications for final approval</p>
+          <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Loan Origination</h1>
+          <p className="text-muted-foreground text-sm mt-1 text-gray-500">Manage verified loan applications and approvals</p>
+        </div>
+        {/* You could add global actions here like 'Export' if needed */}
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Verify Queue</p>
+              <h3 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{stats.verifiedLoans}</h3>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <Clock className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg border shadow-sm w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-            {/* Date Range */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 uppercase">Start Date</label>
-              <input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Approved</p>
+              <h3 className="text-2xl font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">{stats.approvedLoans}</h3>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 uppercase">End Date</label>
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+            <div className="p-3 bg-emerald-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <CheckCircle className="w-6 h-6 text-emerald-600" />
             </div>
+          </div>
+        </div>
 
-            {/* Application Type */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 uppercase">Application Type</label>
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Active Loans</p>
+              <h3 className="text-2xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{stats.activeLoans}</h3>
+            </div>
+            <div className="p-3 bg-purple-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <CreditCard className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Overdue</p>
+              <h3 className="text-2xl font-bold text-gray-900 group-hover:text-red-600 transition-colors">{stats.overdueLoans}</h3>
+            </div>
+            <div className="p-3 bg-red-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Filter Section */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-5 h-5 text-gray-500" />
+          <h2 className="text-lg font-semibold text-gray-800">Filters</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Date Range */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> Start Date
+            </label>
+            <input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              className="w-full text-sm bg-gray-50 border-gray-200 rounded-lg p-2.5 focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> End Date
+            </label>
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              className="w-full text-sm bg-gray-50 border-gray-200 rounded-lg p-2.5 focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white"
+            />
+          </div>
+
+          {/* Application Type */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <FileText className="w-3 h-3" /> App. Type
+            </label>
+            <div className="relative">
               <select
                 value={filters.applicationType}
                 onChange={(e) => setFilters({ ...filters, applicationType: e.target.value })}
-                className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full text-sm bg-gray-50 border-gray-200 rounded-lg p-2.5 appearance-none focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white cursor-pointer"
               >
                 <option value="all">All Types</option>
                 <option value="self">Self</option>
                 <option value="max_born_group">Max Born Group</option>
               </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+              </div>
             </div>
+          </div>
 
-            {/* Loan Status */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 uppercase">Loan Status</label>
+          {/* Loan Status */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" /> Status
+            </label>
+            <div className="relative">
               <select
                 value={filters.loanStatus}
                 onChange={(e) => setFilters({ ...filters, loanStatus: e.target.value })}
-                className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full text-sm bg-gray-50 border-gray-200 rounded-lg p-2.5 appearance-none focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white cursor-pointer"
               >
                 <option value="all">All Statuses</option>
                 <option value="Pending">Pending</option>
@@ -198,68 +271,36 @@ export default function LoanOrigination() {
                 <option value="Paid">Paid</option>
                 <option value="Rejected">Rejected</option>
               </select>
-            </div>
-
-            {/* Shopkeeper Filter - Full Width or separate row based on design, putting below for now */}
-            <div className="md:col-span-2 lg:col-span-4 border-t pt-3 mt-1">
-              <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">Shopkeeper wise</label>
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <select
-                  value={filters.shopkeeperId}
-                  onChange={(e) => setFilters({ ...filters, shopkeeperId: e.target.value })}
-                  className="w-full pl-9 text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="all">All Shopkeepers</option>
-                  {shopkeepers.map(sk => (
-                    <option key={sk._id || sk.id} value={sk.shopName}>
-                      {sk.shopName || sk.name} ({sk.fullName || sk.ownerName})
-                    </option>
-                  ))}
-                </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
               </div>
             </div>
+          </div>
 
-          </div>
-        </div>
-      </div>
-
-      {/* Status Summary */}
-      <div className="grid grid-cols-4 gap-4">
-        {/* ... existing summary cards ... */}
-        <div className="p-4 bg-white border rounded-lg shadow-sm">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-500" />
-            <div>
-              <p className="text-sm text-gray-500">Verified Loans</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.verifiedLoans}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 bg-white border rounded-lg shadow-sm">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 !text-green-500" />
-            <div>
-              <p className="text-sm text-gray-500">Approved</p>
-              <p className="text-2xl font-bold !text-green-600">{stats.approvedLoans}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 bg-white border rounded-lg shadow-sm">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-purple-500" />
-            <div>
-              <p className="text-sm text-gray-500">Active</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.activeLoans}</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 bg-white border rounded-lg shadow-sm">
-          <div className="flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-500" />
-            <div>
-              <p className="text-sm text-gray-500">Overdue</p>
-              <p className="text-2xl font-bold text-red-600">{stats.overdueLoans}</p>
+          {/* Shopkeeper Filter */}
+          <div className="md:col-span-2 lg:col-span-4 pt-4 border-t border-gray-100">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 block flex items-center gap-1">
+              <User className="w-3 h-3" /> Filter by Shopkeeper
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+              </div>
+              <select
+                value={filters.shopkeeperId}
+                onChange={(e) => setFilters({ ...filters, shopkeeperId: e.target.value })}
+                className="w-full pl-10 text-sm bg-gray-50 border-gray-200 rounded-lg p-3 appearance-none focus:border-blue-500 focus:ring-blue-500 transition-all hover:bg-white cursor-pointer"
+              >
+                <option value="all">All Shopkeepers</option>
+                {shopkeepers.map(sk => (
+                  <option key={sk._id || sk.id} value={sk.shopName}>
+                    {sk.shopName || sk.name} ({sk.fullName || sk.ownerName})
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+              </div>
             </div>
           </div>
         </div>

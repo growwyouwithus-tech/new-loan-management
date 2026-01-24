@@ -348,7 +348,7 @@ export default function LoanOrigination() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{loan.appliedDate}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">₹{loan.loanAmount?.toLocaleString()}</div>
-                        <div className="text-sm text-gray-500">{loan.tenure} months @ 3.5%</div>
+                        <div className="text-sm text-gray-500">{loan.tenure} Months</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{loan.emiAmount?.toLocaleString()}</td>
                       <td className="px-6 py-4 whitespace-nowrap">

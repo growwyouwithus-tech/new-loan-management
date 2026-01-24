@@ -745,7 +745,7 @@ export default function VerifiedLoans() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div>₹{loan.loanAmount?.toLocaleString()}</div>
-                      <div className="text-xs text-gray-400">{loan.tenure} months @ 3.5%</div>
+                      <div className="text-xs text-gray-400">{loan.tenure} Months</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">{loan.bankName}</div>

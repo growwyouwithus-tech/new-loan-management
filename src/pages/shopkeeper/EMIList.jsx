@@ -79,6 +79,7 @@ export default function EMIList() {
 
                 let status = 'Upcoming'
                 let collectedDate = null
+                let paymentMode = null
                 let penalty = 0
 
                 // Check if this EMI was paid
@@ -88,6 +89,7 @@ export default function EMIList() {
                     const payment = payments[i - 1]
                     if (payment) {
                         collectedDate = payment.paymentDate || payment.date
+                        paymentMode = payment.paymentMode
 
                         // Check if penalty was stored in payment record
                         if (payment.penalty && payment.penalty > 0) {
@@ -124,6 +126,7 @@ export default function EMIList() {
                     amount: emiAmountBase,
                     dueDate: dueDateStr,
                     collectedDate: collectedDate,
+                    paymentMode: paymentMode,
                     penalty: penalty,
                     status: status,
                     originalLoan: loan
@@ -216,6 +219,19 @@ export default function EMIList() {
                         <CheckCircle className="h-3 w-3 text-green-600" />
                         <span className="text-green-700 font-medium">{date.toLocaleDateString('en-GB')}</span>
                     </div>
+                )
+            }
+        },
+        {
+            accessorKey: 'paymentMode',
+            header: 'Payment Mode',
+            cell: ({ row }) => {
+                const mode = row.original.paymentMode
+                if (!mode) return <span className="text-muted-foreground text-sm">-</span>
+                return (
+                    <span className="capitalize font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded-md text-xs border border-slate-200">
+                        {mode.replace(/_/g, ' ')}
+                    </span>
                 )
             }
         },

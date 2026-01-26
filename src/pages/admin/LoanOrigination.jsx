@@ -27,7 +27,8 @@ const calculateNextEMIDueDate = (loanDateStr) => {
 
 export default function LoanOrigination() {
   const navigate = useNavigate()
-  const { loans, verifiedLoans, approveLoan, rejectLoan, setNextDueDate, getStatistics, fetchLoans, loading } = loanStore()
+  /* Removed getStatistics destructuring and call, added fetchStatistics and stats usage */
+  const { loans, verifiedLoans, approveLoan, rejectLoan, setNextDueDate, fetchLoans, fetchStatistics, stats: storeStats, loading } = loanStore()
   const { shopkeepers, fetchShopkeepers } = shopkeeperStore()
   const [selectedLoan, setSelectedLoan] = useState(null)
   const [showApprovalModal, setShowApprovalModal] = useState(false)
@@ -43,9 +44,15 @@ export default function LoanOrigination() {
   useEffect(() => {
     fetchLoans()
     fetchShopkeepers()
+    fetchStatistics()
   }, [])
 
-  const stats = getStatistics()
+  const stats = storeStats || {
+    verifiedLoans: 0,
+    approvedLoans: 0,
+    activeLoans: 0,
+    overdueLoans: 0
+  }
 
   // Filter loans based on all criteria
   const filteredVerifiedLoans = loans.filter(loan => {

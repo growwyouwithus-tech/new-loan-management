@@ -19,85 +19,44 @@ export default function AdminDashboard() {
   const { notifications, getRecentNotifications, markAsRead, updateNotifications } = notificationStore()
   const {
     loans,
-    pendingLoans,
-    verifiedLoans,
-    approvedLoans,
     activeLoans,
-    completedLoans,
     fetchLoans,
-    loading
+    fetchStatistics,
+    stats: storeStats
   } = loanStore()
 
-  // Calculate actual stats from loan store
-  const stats = {
-    totalLoans: loans.length,
-    activeLoans: activeLoans.length,
-    overdueAmount: activeLoans
-      .filter(loan => loan.status === 'Overdue')
-      .reduce((sum, loan) => sum + (loan.loanAmount || 0), 0),
-    npaPercentage: activeLoans.length > 0
-      ? ((activeLoans.filter(loan => loan.status === 'Overdue').length / activeLoans.length) * 100).toFixed(1)
-      : 0,
-    totalDisbursed: approvedLoans.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0),
-    totalCollected: completedLoans.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0),
-    pendingApprovals: verifiedLoans.length,
-    kycPending: pendingLoans.filter(loan => loan.kycStatus !== 'verified').length
-  }
-
-  // Calculate chart data from actual loans
-  const getDisbursementData = () => {
-    const last7Days = []
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toLocaleDateString('en-GB')
-
-      const dayLoans = approvedLoans.filter(loan => {
-        const loanDate = new Date(loan.approvedDate || loan.createdAt)
-        return loanDate.toLocaleDateString('en-GB') === dateStr
-      })
-
-      last7Days.push({
-        date: dateStr,
-        amount: dayLoans.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0)
-      })
-    }
-    return last7Days
-  }
-
-  const getCollectionData = () => {
-    const last7Days = []
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toLocaleDateString('en-GB')
-
-      const dayCollections = completedLoans.filter(loan => {
-        const loanDate = new Date(loan.completedDate || loan.updatedAt)
-        return loanDate.toLocaleDateString('en-GB') === dateStr
-      })
-
-      last7Days.push({
-        date: dateStr,
-        amount: dayCollections.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0)
-      })
-    }
-    return last7Days
+  // Default empty stats if loading
+  const stats = storeStats || {
+    totalLoans: 0,
+    activeLoans: 0,
+    overdueAmount: 0,
+    npaPercentage: 0,
+    totalDisbursed: 0,
+    totalCollected: 0,
+    pendingApprovals: 0,
+    kycPending: 0,
+    disbursementsTrend: [],
+    collectionsTrend: [],
+    pendingLoans: 0,
+    verifiedLoans: 0,
+    approvedLoans: 0,
+    completedLoans: 0
   }
 
   const getLoansByStatusData = () => {
     return [
-      { name: 'Pending', value: pendingLoans.length, color: '#f59e0b' },
-      { name: 'Verified', value: verifiedLoans.length, color: '#3b82f6' },
-      { name: 'Approved', value: approvedLoans.length, color: '#10b981' },
-      { name: 'Active', value: activeLoans.length, color: '#8b5cf6' },
-      { name: 'Completed', value: completedLoans.length, color: '#6b7280' }
+      { name: 'Pending', value: stats.pendingLoans, color: '#f59e0b' },
+      { name: 'Verified', value: stats.verifiedLoans, color: '#3b82f6' },
+      { name: 'Approved', value: stats.approvedLoans, color: '#10b981' },
+      { name: 'Active', value: stats.activeLoans, color: '#8b5cf6' },
+      { name: 'Completed', value: stats.completedLoans, color: '#6b7280' }
     ]
   }
 
   useEffect(() => {
-    // Fetch loans from backend on component mount
+    // Fetch loans and stats from backend on component mount
     fetchLoans()
+    fetchStatistics()
   }, [])
 
   useEffect(() => {
@@ -267,14 +226,14 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="NPA Percentage"
-          value={`${stats.npaPercentage}%`}
+          value={`${stats.npaPercentage ? Number(stats.npaPercentage).toFixed(1) : '0.0'}%`}
           icon={TrendingUp}
           color="yellow"
           onClick={() => navigate('/admin/loans')}
         />
       </div>
 
-      {/* Secondary Stats */}
+      {/* Secondary Stats - Commented out
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Disbursed"
@@ -305,6 +264,7 @@ export default function AdminDashboard() {
           onClick={() => navigate('/admin/kyc')}
         />
       </div>
+      */}
 
       {/* Recent Notifications */}
       <motion.div
@@ -390,9 +350,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={getDisbursementData()}>
+                <LineChart data={stats.disbursementsTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis dataKey="_id" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
@@ -416,9 +376,9 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={getCollectionData()}>
+                <BarChart data={stats.collectionsTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis dataKey="_id" />
                   <YAxis />
                   <Tooltip />
                   <Legend />

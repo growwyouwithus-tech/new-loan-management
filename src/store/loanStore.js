@@ -477,20 +477,40 @@ const loanStore = create(
         return true;
       },
 
-      // Get statistics
-      getStatistics: () => {
-        const loans = get().loans;
-        return {
-          totalLoans: loans.length,
-          pendingLoans: loans.filter(l => l.status === 'Pending').length,
-          verifiedLoans: loans.filter(l => l.status === 'Verified').length,
-          approvedLoans: loans.filter(l => l.status === 'Approved').length,
-          activeLoans: loans.filter(l => l.status === 'Active').length,
-          overdueLoans: loans.filter(l => l.status === 'Overdue').length,
-          completedLoans: loans.filter(l => l.status === 'Paid').length,
-          rejectedLoans: loans.filter(l => l.status === 'Rejected').length,
-          totalPenalties: loans.reduce((sum, loan) => sum + (loan.totalPenalty || 0), 0),
-        };
+      // Dashboard statistics
+      stats: null,
+
+      // Fetch statistics from backend
+      fetchStatistics: async () => {
+        try {
+          const stats = await loanService.getStatistics();
+          set({ stats });
+          return stats;
+        } catch (error) {
+          console.error('Failed to fetch statistics:', error);
+          // Fallback to local calculation if backend fails (prevents UI crash)
+          const loans = get().loans;
+          set({
+            stats: {
+              totalLoans: loans.length,
+              pendingLoans: loans.filter(l => l.status === 'Pending').length,
+              verifiedLoans: loans.filter(l => l.status === 'Verified').length,
+              approvedLoans: loans.filter(l => l.status === 'Approved').length,
+              activeLoans: loans.filter(l => l.status === 'Active').length,
+              overdueLoans: loans.filter(l => l.status === 'Overdue').length,
+              completedLoans: loans.filter(l => l.status === 'Paid').length,
+              rejectedLoans: loans.filter(l => l.status === 'Rejected').length,
+              totalPenalties: loans.reduce((sum, loan) => sum + (loan.totalPenalty || 0), 0),
+              totalDisbursed: 0,
+              totalCollected: 0,
+              overdueAmount: 0,
+              npaPercentage: 0,
+              kycPending: 0,
+              disbursementsTrend: [],
+              collectionsTrend: []
+            }
+          });
+        }
       },
 
       // Record payment for EMI Management

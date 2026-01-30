@@ -448,7 +448,7 @@ export default function AdminDashboard() {
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">{loan.id}</p>
+                        <p className="font-medium">{loan.loanId || loan._id || loan.id}</p>
                         <Badge
                           variant={
                             loan.status === 'Active'

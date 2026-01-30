@@ -10,9 +10,9 @@ import Sidebar from '../components/common/Sidebar'
 
 const sidebarItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/admin/users', label: 'Users', icon: Users },
+  { path: '/admin/users', label: 'Employee', icon: Users },
   { path: '/admin/shopkeepers', label: 'Shopkeepers', icon: Store },
-  { path: '/admin/borrowers', label: 'Borrowers', icon: UserCheck },
+  { path: '/admin/borrowers', label: 'Client', icon: UserCheck },
   { path: '/admin/loans', label: 'Loans', icon: FileText },
   { path: '/admin/verified-loans', label: 'Verified Loans', icon: UserCheck },
   { path: '/admin/repayments', label: 'Repayments', icon: CreditCard },

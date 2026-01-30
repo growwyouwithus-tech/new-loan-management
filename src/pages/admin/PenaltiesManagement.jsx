@@ -4,7 +4,7 @@ import { toast } from 'react-toastify'
 import loanStore from '../../store/loanStore'
 
 export default function PenaltiesManagement() {
-  const { loans, activeLoans, applyPenalty, checkAndApplyPenalties, getStatistics } = loanStore()
+  const { loans, activeLoans, applyPenalty, checkAndApplyPenalties, fetchStatistics, stats: storeStats } = loanStore()
   const [penaltySettings, setPenaltySettings] = useState({
     defaultPenaltyAmount: 500,
     gracePeriodDays: 0,
@@ -15,7 +15,14 @@ export default function PenaltiesManagement() {
   const [overdueLoans, setOverdueLoans] = useState([])
   const [penaltyHistory, setPenaltyHistory] = useState([])
 
-  const stats = getStatistics()
+  // Fetch statistics on mount
+  useEffect(() => {
+    fetchStatistics()
+  }, [])
+
+  const stats = storeStats || {
+    totalPenalties: 0
+  }
 
   // Get overdue loans and penalty history
   useEffect(() => {
@@ -25,11 +32,11 @@ export default function PenaltiesManagement() {
       const dueDate = new Date(loan.nextDueDate)
       return currentDate > dueDate
     })
-    
+
     setOverdueLoans(overdue)
 
     // Extract penalty history from all loans
-    const allPenalties = loans.flatMap(loan => 
+    const allPenalties = loans.flatMap(loan =>
       (loan.penalties || []).map(penalty => ({
         ...penalty,
         loanId: loan.loanId,
@@ -37,7 +44,7 @@ export default function PenaltiesManagement() {
         loanDbId: loan.id,
       }))
     ).sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt))
-    
+
     setPenaltyHistory(allPenalties)
   }, [activeLoans, loans])
 
@@ -51,7 +58,7 @@ export default function PenaltiesManagement() {
   const handleManualPenalty = (loanId, customAmount = null) => {
     const amount = customAmount || penaltySettings.defaultPenaltyAmount
     const success = applyPenalty(loanId, amount, 'Manual penalty applied')
-    
+
     if (success) {
       toast.success(`Penalty of ₹${amount} applied successfully`)
     } else {
@@ -115,8 +122,8 @@ export default function PenaltiesManagement() {
                 {penaltyHistory.filter(p => {
                   const penaltyDate = new Date(p.appliedAt)
                   const currentDate = new Date()
-                  return penaltyDate.getMonth() === currentDate.getMonth() && 
-                         penaltyDate.getFullYear() === currentDate.getFullYear()
+                  return penaltyDate.getMonth() === currentDate.getMonth() &&
+                    penaltyDate.getFullYear() === currentDate.getFullYear()
                 }).length}
               </p>
             </div>
@@ -142,7 +149,7 @@ export default function PenaltiesManagement() {
           <h3 className="text-lg leading-6 font-medium text-gray-900">Penalty Configuration</h3>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">Configure automatic penalty rules and amounts</p>
         </div>
-        
+
         <div className="px-6 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -150,33 +157,33 @@ export default function PenaltiesManagement() {
               <input
                 type="number"
                 value={penaltySettings.defaultPenaltyAmount}
-                onChange={(e) => setPenaltySettings({...penaltySettings, defaultPenaltyAmount: parseInt(e.target.value)})}
+                onChange={(e) => setPenaltySettings({ ...penaltySettings, defaultPenaltyAmount: parseInt(e.target.value) })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Grace Period (Days)</label>
               <input
                 type="number"
                 value={penaltySettings.gracePeriodDays}
-                onChange={(e) => setPenaltySettings({...penaltySettings, gracePeriodDays: parseInt(e.target.value)})}
+                onChange={(e) => setPenaltySettings({ ...penaltySettings, gracePeriodDays: parseInt(e.target.value) })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            
+
             <div className="md:col-span-2">
               <label className="flex items-center">
                 <input
                   type="checkbox"
                   checked={penaltySettings.autoApplyPenalties}
-                  onChange={(e) => setPenaltySettings({...penaltySettings, autoApplyPenalties: e.target.checked})}
+                  onChange={(e) => setPenaltySettings({ ...penaltySettings, autoApplyPenalties: e.target.checked })}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm text-gray-700">Automatically apply penalties after 12:00 AM on due date</span>
               </label>
             </div>
-            
+
             <div className="md:col-span-2">
               <button
                 onClick={savePenaltySettings}
@@ -195,7 +202,7 @@ export default function PenaltiesManagement() {
           <h3 className="text-lg leading-6 font-medium text-gray-900">Overdue Loans</h3>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">Loans with overdue EMI payments</p>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -273,7 +280,7 @@ export default function PenaltiesManagement() {
           <h3 className="text-lg leading-6 font-medium text-gray-900">Penalty History</h3>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">Recent penalty applications and history</p>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">

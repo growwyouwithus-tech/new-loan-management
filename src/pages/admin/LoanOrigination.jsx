@@ -315,10 +315,10 @@ export default function LoanOrigination() {
 
       {/* Verified Loans Table */}
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+        {/* <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
           <h3 className="text-lg leading-6 font-medium text-gray-900">Verified Loans Awaiting Approval</h3>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">Review and approve verified loan applications</p>
-        </div>
+        </div> */}
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -393,7 +393,7 @@ export default function LoanOrigination() {
               ) : (
                 <tr>
                   <td colSpan="10" className="px-6 py-4 text-center text-sm text-gray-500">
-                    No verified loans awaiting approval.
+                    No loans
                   </td>
                 </tr>
               )}

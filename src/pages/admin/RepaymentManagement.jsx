@@ -29,7 +29,7 @@ const calculateEMIDueDate = (baseDateStr, emiNumber) => {
 }
 
 export default function RepaymentManagement() {
-  const { loans, activeLoans, collectPayment, applyPenalty, checkAndApplyPenalties, getStatistics, getPayments } = loanStore()
+  const { loans, activeLoans, collectPayment, applyPenalty, checkAndApplyPenalties, fetchStatistics, stats: storeStats, getPayments } = loanStore()
   const { shopkeepers, fetchShopkeepers } = shopkeeperStore()
   const [repayments, setRepayments] = useState([])
   const [filteredRepayments, setFilteredRepayments] = useState([])
@@ -45,7 +45,14 @@ export default function RepaymentManagement() {
     paymentProof: '',
   })
 
-  const stats = getStatistics()
+  // Fetch statistics on mount
+  useEffect(() => {
+    fetchStatistics()
+  }, [])
+
+  const stats = storeStats || {
+    totalPenalties: 0
+  }
   const allPayments = getPayments()
 
   // Generate repayment schedule from active loans and sync with EMI payments
@@ -420,7 +427,7 @@ export default function RepaymentManagement() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loan Details</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Borrower</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EMI Details</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied Date</th>

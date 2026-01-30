@@ -32,8 +32,8 @@ export default function LoginPage() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'admin@loanmanagement.com',
-      password: 'admin123',
+      email: '',
+      password: '',
     },
   })
 
@@ -103,6 +103,7 @@ export default function LoginPage() {
                     {...register('email')}
                     type="email"
                     placeholder="Enter your email"
+                    autoComplete="off"
                     className="pl-10 bg-white border-2 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#1a365d] focus:border-[#1a365d] rounded-full py-3"
                     error={errors.email}
                   />
@@ -123,6 +124,7 @@ export default function LoginPage() {
                     {...register('password')}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
+                    autoComplete="new-password"
                     className="pl-10 pr-10 bg-white border-2 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#1a365d] focus:border-[#1a365d] rounded-full py-3"
                     error={errors.password}
                   />

@@ -30,6 +30,8 @@ export default function ShopkeeperManagement() {
   const [ownerPhoto, setOwnerPhoto] = useState(null)
   const [shopImage, setShopImage] = useState(null)
   const [showPassword, setShowPassword] = useState({})
+  const [showModalPassword, setShowModalPassword] = useState(false)
+  const [showModalConfirmPassword, setShowModalConfirmPassword] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showCameraModal, setShowCameraModal] = useState(false)
   const [cameraType, setCameraType] = useState(null)
@@ -679,26 +681,44 @@ export default function ShopkeeperManagement() {
             </div>
             <div>
               <label className="text-sm font-medium">Create Password <span className="text-red-500">*</span></label>
-              <Input
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: { value: 6, message: 'Password must be at least 6 characters' }
-                })}
-                type="password"
-                placeholder="Create password"
-              />
+              <div className="relative">
+                <Input
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: { value: 6, message: 'Password must be at least 6 characters' }
+                  })}
+                  type={showModalPassword ? 'text' : 'password'}
+                  placeholder="Create password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowModalPassword(!showModalPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showModalPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
             </div>
             <div>
               <label className="text-sm font-medium">Confirm Password <span className="text-red-500">*</span></label>
-              <Input
-                {...register('confirmPassword', {
-                  required: 'Please confirm your password',
-                  validate: value => value === password || 'Passwords do not match'
-                })}
-                type="password"
-                placeholder="Confirm password"
-              />
+              <div className="relative">
+                <Input
+                  {...register('confirmPassword', {
+                    required: 'Please confirm your password',
+                    validate: value => value === password || 'Passwords do not match'
+                  })}
+                  type={showModalConfirmPassword ? 'text' : 'password'}
+                  placeholder="Confirm password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowModalConfirmPassword(!showModalConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showModalConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
             </div>
           </div>
